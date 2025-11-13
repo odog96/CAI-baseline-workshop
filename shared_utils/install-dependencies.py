@@ -12,7 +12,7 @@ def install_requirements():
             "pip", 
             "install", 
             "-r", 
-            "requirements.txt"
+            "shared_utils/requirements.txt"
         ])
         print("✓ Dependencies installed successfully!")
     except subprocess.CalledProcessError as e:
