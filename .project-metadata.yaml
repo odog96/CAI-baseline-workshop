@@ -1,13 +1,13 @@
 name: ML Ops Hands on Lab 
 description: "Prototype to demonstrate machine learning operations in production"
 author: "Cloudera"
-date: "2025-02-13"
+date: "2025-12-11"
 specification_version: 1.0
 prototype_version: 1.0
 environment_variables:
 
   CONNECTION_NAME:
-    default: "go01-demo-aws"
+    default: "go01-aw-dl"
     description: "datalake connection name"
 runtimes: 
   - editor: Workbench
