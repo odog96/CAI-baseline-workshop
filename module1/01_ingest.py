@@ -186,7 +186,9 @@ def main():
     print("=" * 60)
     print(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
-    USERNAME = os.environ["PROJECT_OWNER"]
+    USERNAME = os.environ.get('HADOOP_USER_NAME') # use HADOOP_USER_NAME env to grab executing user if available
+    if not USERNAME:
+        USERNAME = os.environ["PROJECT_OWNER"] # fallback to project owner
     print(f"User: {USERNAME}")
 
     # Configuration
