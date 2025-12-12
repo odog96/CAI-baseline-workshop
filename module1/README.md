@@ -80,6 +80,22 @@ Execute scripts in order. Each step builds on previous outputs.
 
 ## Step-by-Step Guide
 
+### Pre Setup - 
+
+Follow the instructors guide to get you to this portal page:
+
+![main-page](images/cai-portal.png)
+
+
+Click into CAI. 
+Find your project and click into it. 
+Open a session as follows. Make sure
+
+![session-details](images/session-details.png)
+
+Make sure you enable spark and pick the spark 3.3.0 addon option.
+
+
 ### Step 1: Data Ingestion
 
 **Purpose:** Load raw bank marketing data and prepare it for analysis and training.
@@ -191,7 +207,9 @@ Total runs completed: 8
 - Training time and data shapes
 - Model artifacts (the actual trained model file)
 
-**[PLACEHOLDER FOR IMAGE: Screenshot of MLflow UI showing experiment runs]**
+![experiments](images/experiments-1.png)
+
+![experiments](images/experiments-2.png)
 
 **Next: Explore in Cloudera AI**
 After running the training script:
@@ -334,6 +352,28 @@ inference_data/engineered_inference_data.csv
 
 We are going to create 2 jobs from 2 seperate python script files and we're link a dependency as follows:
 
+**Click on 'Jobs'**
+
+![job-create-ui](images/job-create-1.png)
+
+**Create New Job**
+
+![job-create-ui](images/job-create-2.png)
+
+**use the file path shown for first job.**
+
+**Then select manual.**
+
+![job-create-ui](images/job-create-3.png)
+
+
+![job-create-ui](images/job-create-4.png)
+### Now Lets Create the second job
+![job-create-ui](images/job-create-5.png)
+
+**Finally, Create a dependency to the first job**
+
+![job-create-ui](images/job-create-6.png)
 
 
 ```

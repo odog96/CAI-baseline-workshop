@@ -22,6 +22,11 @@ except NameError:
 # Add parent directory for imports
 script_dir = BASE_DIR
 sys.path.append(BASE_DIR)
+
+# Get username for unique naming in workshop environment
+USERNAME = os.environ.get('HADOOP_USER_NAME')
+if not USERNAME:
+    USERNAME = os.environ["PROJECT_OWNER"]
     
 # Import from your project's helper scripts
 try:
@@ -47,7 +52,7 @@ def main():
 
     # 1. Setup MLflow experiment
     # We'll use a specific experiment name for retraining jobs
-    EXPERIMENT_NAME = "banking_retraining_pipeline"
+    EXPERIMENT_NAME = f"BANKING_RETRAINING_PIPELINE_{USERNAME}"
     setup_mlflow(EXPERIMENT_NAME)
     
     # 2. Load both datasets

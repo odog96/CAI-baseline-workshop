@@ -21,8 +21,13 @@ from mlflow.models import infer_signature
 
 from shared_utils import MODEL_CONFIG
 
-# MLflow experiment configuration
-EXPERIMENT_NAME = "bank_marketing_experiments"
+# Get username for unique naming in workshop environment
+USERNAME = os.environ.get('HADOOP_USER_NAME')
+if not USERNAME:
+    USERNAME = os.environ["PROJECT_OWNER"]
+
+# MLflow experiment configuration with username suffix
+EXPERIMENT_NAME = f"BANK_MARKETING_EXPERIMENTS_{USERNAME}"
 
 
 def setup_mlflow():

@@ -48,7 +48,9 @@ from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import FloatTensorType, StringTensorType
 
 # Get username for unique naming in workshop environment
-USERNAME = os.environ["PROJECT_OWNER"]
+USERNAME = os.environ.get('HADOOP_USER_NAME')
+if not USERNAME:
+    USERNAME = os.environ["PROJECT_OWNER"]
 
 # Get the project root directory (CML jobs run from /home/cdsw)
 try:
@@ -153,7 +155,7 @@ def main():
     print("-" * 80)
     
     # Setup MLflow experiment (unique per user for workshop)
-    EXPERIMENT_NAME = f"banking_onnx_retraining_pipeline_{USERNAME}"
+    EXPERIMENT_NAME = f"BANKING_ONNX_RETRAINING_PIPELINE_{USERNAME}"
     setup_mlflow(EXPERIMENT_NAME)
     print(f"✅ MLflow experiment: {EXPERIMENT_NAME}")
     

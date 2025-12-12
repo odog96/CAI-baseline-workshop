@@ -241,6 +241,13 @@ class PreprocessingPipeline:
         # Get categorical feature names (one-hot encoded)
         cat_encoder = self.pipeline.named_transformers_['cat']
         cat_feature_names = cat_encoder.get_feature_names_out(self.categorical_features)
+
+        # Sanitize feature names to be XGBoost-compatible
+        cat_feature_names = [
+            name.replace('<', 'lt_').replace('>', 'gt_').replace('[', '_').replace(']', '_')
+            for name in cat_feature_names
+        ]
+
         feature_names.extend(cat_feature_names)
 
         return feature_names
