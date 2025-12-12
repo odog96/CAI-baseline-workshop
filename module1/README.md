@@ -313,11 +313,6 @@ In production, inference is typically broken into stages:
 - Applies preprocessing (scaling and encoding)
 - Outputs engineered data ready for the model
 
-**To Run:**
-```bash
-python 05.1_inference_data_prep.py
-```
-
 **Output File:**
 ```
 inference_data/engineered_inference_data.csv
@@ -335,11 +330,13 @@ inference_data/engineered_inference_data.csv
 - Generates probability scores
 - Saves results with row tracking
 
-**To Run:**
-```bash
-python 05.2_inference_predict.py
-```
+**Job Creation through UI:**
 
+We are going to create 2 jobs from 2 seperate python script files and we're link a dependency as follows:
+
+
+
+```
 **Output File:**
 ```
 inference_data/predictions.csv
