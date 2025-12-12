@@ -67,8 +67,8 @@ class TestRunner:
             ('02_eda_notebook.ipynb', 'EDA Analysis (Jupyter)'),
             ('03_train_quick.py', 'Quick Model Training'),
             ('04_deploy.py', 'Model Deployment'),
-            ('05_1_inference_data_prep.py', 'Inference Data Preparation'),
-            ('05_2_inference_predict.py', 'Inference Predictions'),
+            ('05.1_inference_data_prep.py', 'Inference Data Preparation'),
+            ('05.2_inference_predict.py', 'Inference Predictions'),
         ]
 
     def should_run(self, script_name: str) -> bool:
