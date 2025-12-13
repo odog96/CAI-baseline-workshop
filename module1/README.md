@@ -502,7 +502,7 @@ In a real deployment, applications would query this endpoint continuously. Later
 
 ### ⚠️ Important: Configure Your Model Endpoint
 
-Before running the inference scripts (`05_2_inference_predict.py` and `06_Inference_101.ipynb`), you **must update** the MODEL_ENDPOINT and ACCESS_KEY with your own deployed model's credentials.
+Before running the inference scripts (`05_2_inference_predict.py` and `06_Inference_101.ipynb`), you **must configure** your model endpoint credentials in `shared_utils/config.py`.
 
 **Step 1: Find Your Model Endpoint**
 
@@ -517,35 +517,31 @@ Before running the inference scripts (`05_2_inference_predict.py` and `06_Infere
                      headers={'Content-Type': 'application/json'})
    ```
 
-**Step 2: Extract and Update Your Code**
+**Step 2: Extract Your Credentials**
 
 From the instructions above, copy:
-- **MODEL_ENDPOINT**: The full URL (the https://... part)
-- **ACCESS_KEY**: The accessKey value
+- **model_endpoint**: The full URL (the https://... part)
+- **access_key**: The accessKey value
 
-**Step 3: Update These Files**
+**Step 3: Update shared_utils/config.py**
 
-Update the following two files with YOUR endpoint and access key:
+Open `shared_utils/config.py` and update the `MODEL_ENDPOINT_CONFIG` section with your credentials:
 
-1. **`05.2_inference_predict.py`** - Find this section:
-   ```python
-   MODEL_ENDPOINT = "https://modelservice.ml-dbfc64d1-783.go01-dem.ylcu-atmi.cloudera.site/model"
-   ACCESS_KEY = "mbtbh46x9h7wxj4cdkxz9fxl0nzmrefv"
-   ```
-   Replace with your values from Step 1.
-
-2. **`06_Inference_101.ipynb`** - Find this cell:
-   ```python
-   # Model endpoint
-   MODEL_ENDPOINT = "https://modelservice.ml-dbfc64d1-783.go01-dem.ylcu-atmi.cloudera.site/model"
-   ACCESS_KEY = "mbtbh46x9h7wxj4cdkxz9fxl0nzmrefv"
-   ```
-   Replace with your values from Step 1.
+```python
+# Model endpoint configuration for inference
+# UPDATE THESE VALUES with your deployed model's endpoint and access key
+MODEL_ENDPOINT_CONFIG = {
+    "model_endpoint": "https://modelservice.ml-YOUR-ENDPOINT.cloudera.site/model",
+    "access_key": "YOUR_ACCESS_KEY_HERE"
+}
+```
 
 **Why This Is Important:**
 
-Each deployed model has a unique endpoint and access key. Using the wrong credentials will cause inference requests to fail with authentication errors. This setup enables:
+Each deployed model has a unique endpoint and access key. Using the wrong credentials will cause inference requests to fail with authentication errors. This centralized config approach enables:
 - ✅ Secure API access (access key prevents unauthorized predictions)
+- ✅ Single point of configuration (update once in `shared_utils/config.py`, use everywhere)
+- ✅ Centralized configuration (all project settings in one place)
 - ✅ Model tracking (each request is logged to your deployment)
 - ✅ Usage monitoring (see how many predictions are being made)
 - ✅ Resource management (limit concurrent requests)

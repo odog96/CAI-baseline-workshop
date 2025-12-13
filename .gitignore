@@ -44,6 +44,10 @@ checkpoints/
 *.sqlite
 *.db
 
+# Test results
+module1/test_results.json
+module1/test_results.log
+
 # Virtual environments
 venv/
 env/
