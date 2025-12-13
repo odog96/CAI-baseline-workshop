@@ -352,6 +352,17 @@ inference_data/engineered_inference_data.csv
 
 We are going to create 2 jobs from 2 seperate python script files and we're link a dependency as follows:
 
+### before getting started
+
+We need to update the config file with model details so that various scripts can collect the right model informaiton
+
+![job-create-ui](images/gather-model-details.png)
+
+![job-create-ui](images/paste-model-details.png)
+
+
+
+
 **Click on 'Jobs'**
 
 ![job-create-ui](images/job-create-1.png)
