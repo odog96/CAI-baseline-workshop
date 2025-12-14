@@ -30,7 +30,54 @@ from datetime import datetime
 import pickle
 
 # Add parent directory for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Handle both interactive and job execution contexts
+print("[DEBUG] Setting up import paths...")
+print(f"[DEBUG] Current working directory: {os.getcwd()}")
+
+try:
+    # Try using __file__ (works in normal script execution)
+    script_path = os.path.abspath(__file__)
+    module_dir = os.path.dirname(script_path)
+    parent_dir = os.path.dirname(module_dir)
+    print(f"[DEBUG] Using __file__ approach")
+    print(f"[DEBUG]   script_path: {script_path}")
+except NameError:
+    # __file__ is not defined (e.g., in Cloudera AI job containers)
+    # Use getcwd() approach instead
+    print(f"[DEBUG] __file__ not defined, using getcwd() approach")
+    script_dir = os.getcwd()
+    if '/module1' in script_dir:
+        module_dir = script_dir
+        parent_dir = os.path.dirname(script_dir)
+        print(f"[DEBUG]   Detected module1 in path")
+    else:
+        # Assume we need to find module1
+        module_dir = os.path.join(script_dir, 'module1')
+        parent_dir = script_dir
+        print(f"[DEBUG]   module1 not in path, constructing paths")
+
+print(f"[DEBUG]   module_dir: {module_dir}")
+print(f"[DEBUG]   parent_dir: {parent_dir}")
+
+# Add both directories to sys.path
+# - parent_dir for shared_utils
+# - module_dir for helpers
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+    print(f"[DEBUG] Added parent_dir to sys.path")
+if module_dir not in sys.path:
+    sys.path.insert(0, module_dir)
+    print(f"[DEBUG] Added module_dir to sys.path")
+
+print(f"[DEBUG] First 5 sys.path entries:")
+for i, p in enumerate(sys.path[:5]):
+    print(f"[DEBUG]   [{i}] {p}")
+print("[DEBUG] Attempting imports...")
+
+# Store module_dir as a global for use in path construction
+# This ensures all file paths are absolute and work regardless of CWD
+SCRIPT_DIR = module_dir
+print(f"[DEBUG] SCRIPT_DIR set to: {SCRIPT_DIR}")
 
 
 def load_engineered_inference_data(data_path):
@@ -131,7 +178,9 @@ def preprocess_for_api(X_engineered, feature_engineer):
     ]
 
     # Load full training data to fit preprocessor on all categorical values
-    df_train = pd.read_csv("data/bank-additional/bank-additional-full.csv", sep=";")
+    train_data_path = os.path.join(SCRIPT_DIR, "data", "bank-additional", "bank-additional-full.csv")
+    print(f"[DEBUG] Loading training data from: {train_data_path}")
+    df_train = pd.read_csv(train_data_path, sep=";")
     df_train_eng = feature_engineer.transform(df_train)
 
     # Create and fit preprocessor WITH engagement_score (matches deployed engineered model)
@@ -354,7 +403,10 @@ def main():
     print("-" * 80)
 
     data_load_start = time.time()
-    df_engineered = load_engineered_inference_data("inference_data/engineered_inference_data.csv")
+    # Use absolute path based on script location
+    engineered_data_path = os.path.join(SCRIPT_DIR, "inference_data", "engineered_inference_data.csv")
+    print(f"[DEBUG] Looking for data at: {engineered_data_path}")
+    df_engineered = load_engineered_inference_data(engineered_data_path)
     data_load_time = time.time() - data_load_start
     print(f"Data loading time: {data_load_time:.2f} seconds")
 
@@ -363,7 +415,10 @@ def main():
     print("-" * 80)
 
     pipeline_load_start = time.time()
-    feature_engineer = load_preprocessing_pipeline()
+    # Use absolute path based on script location
+    feature_engineer_path = os.path.join(SCRIPT_DIR, "inference_data", "feature_engineer.pkl")
+    print(f"[DEBUG] Looking for feature engineer at: {feature_engineer_path}")
+    feature_engineer = load_preprocessing_pipeline(feature_engineer_path)
     pipeline_load_time = time.time() - pipeline_load_start
     print(f"Pipeline loading time: {pipeline_load_time:.2f} seconds")
 
@@ -415,8 +470,12 @@ def main():
     print("-" * 80)
 
     save_start = time.time()
-    save_predictions(results_df)
-    create_prediction_summary_report(results_df)
+    # Use absolute path based on script location
+    output_dir = os.path.join(SCRIPT_DIR, "inference_data")
+    predictions_path = os.path.join(output_dir, "predictions.csv")
+    print(f"[DEBUG] Output directory: {output_dir}")
+    save_predictions(results_df, output_path=predictions_path)
+    create_prediction_summary_report(results_df, output_dir=output_dir)
     save_time = time.time() - save_start
     print(f"Save time: {save_time:.2f} seconds")
 

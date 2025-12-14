@@ -29,9 +29,59 @@ import pickle
 import tempfile
 
 # Add parent directory for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Handle both interactive and job execution contexts
+print("[DEBUG] Setting up import paths...")
+print(f"[DEBUG] Current working directory: {os.getcwd()}")
 
+try:
+    # Try using __file__ (works in normal script execution)
+    script_path = os.path.abspath(__file__)
+    module_dir = os.path.dirname(script_path)
+    parent_dir = os.path.dirname(module_dir)
+    print(f"[DEBUG] Using __file__ approach")
+    print(f"[DEBUG]   script_path: {script_path}")
+except NameError:
+    # __file__ is not defined (e.g., in Cloudera AI job containers)
+    # Use getcwd() approach instead
+    print(f"[DEBUG] __file__ not defined, using getcwd() approach")
+    script_dir = os.getcwd()
+    if '/module1' in script_dir:
+        module_dir = script_dir
+        parent_dir = os.path.dirname(script_dir)
+        print(f"[DEBUG]   Detected module1 in path")
+    else:
+        # Assume we need to find module1
+        module_dir = os.path.join(script_dir, 'module1')
+        parent_dir = script_dir
+        print(f"[DEBUG]   module1 not in path, constructing paths")
+
+print(f"[DEBUG]   module_dir: {module_dir}")
+print(f"[DEBUG]   parent_dir: {parent_dir}")
+
+# Add both directories to sys.path
+# - parent_dir for shared_utils
+# - module_dir for helpers
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+    print(f"[DEBUG] Added parent_dir to sys.path")
+if module_dir not in sys.path:
+    sys.path.insert(0, module_dir)
+    print(f"[DEBUG] Added module_dir to sys.path")
+
+print(f"[DEBUG] First 5 sys.path entries:")
+for i, p in enumerate(sys.path[:5]):
+    print(f"[DEBUG]   [{i}] {p}")
+print("[DEBUG] Attempting imports...")
+
+# Import preprocessing classes
+# Note: helpers.__init__.py handles missing training dependencies (mlflow, pydantic) gracefully
 from helpers.preprocessing import FeatureEngineer, PreprocessingPipeline
+print("[DEBUG] Successfully imported FeatureEngineer and PreprocessingPipeline")
+
+# Store module_dir as a global for use in path construction
+# This ensures all file paths are absolute and work regardless of CWD
+SCRIPT_DIR = module_dir
+print(f"[DEBUG] SCRIPT_DIR set to: {SCRIPT_DIR}")
 
 
 def load_raw_inference_data(data_path):
@@ -194,7 +244,10 @@ def main():
     print("-" * 80)
 
     data_load_start = time.time()
-    df_raw = load_raw_inference_data("inference_data/raw_inference_data.csv")
+    # Use absolute path based on script location
+    raw_data_path = os.path.join(SCRIPT_DIR, "inference_data", "raw_inference_data.csv")
+    print(f"[DEBUG] Looking for data at: {raw_data_path}")
+    df_raw = load_raw_inference_data(raw_data_path)
     data_load_time = time.time() - data_load_start
     print(f"Data loading time: {data_load_time:.2f} seconds")
 
@@ -221,8 +274,11 @@ def main():
     print("-" * 80)
 
     save_start = time.time()
-    save_engineered_data(df_features)
-    save_feature_engineer_artifact(feature_engineer)
+    # Use absolute path based on script location
+    output_dir = os.path.join(SCRIPT_DIR, "inference_data")
+    print(f"[DEBUG] Output directory: {output_dir}")
+    save_engineered_data(df_features, output_dir=output_dir)
+    save_feature_engineer_artifact(feature_engineer, output_dir=output_dir)
     save_time = time.time() - save_start
     print(f"Save time: {save_time:.2f} seconds")
 

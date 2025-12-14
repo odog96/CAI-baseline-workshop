@@ -39,6 +39,6 @@ API_CONFIG = {
 # Model endpoint configuration for inference
 # UPDATE THESE VALUES with your deployed model's endpoint and access key
 MODEL_ENDPOINT_CONFIG = {
-    "model_endpoint": "hhttps://modelservice.ml-07046a98-174.se-sandb.a465-9q4k.cloudera.site/model",
-    "access_key": "mt704w5vx1ijfem3ycmk717c5k2ycw9o"
+    "model_endpoint": "https://modelservice.ml-56979638-3f1.go01-dem.ylcu-atmi.cloudera.site/model",
+    "access_key": "m9p35t2ejlml2sbrbumjgo1xt23x2vr0"
 }
