@@ -24,13 +24,13 @@ Learn to build an end-to-end ML pipeline from raw data to production inference:
 
 ---
 
-### **Module 2: Proactive Monitoring** 📊
+### **Module 2: Model Monitoring 101** 📊
 **Duration:** 30-45 minutes
 **Prerequisites:** Complete Module 1
 
 [📖 View Module 2](./module2/README.md)
 
-Learn to detect when models degrade in production:
+We'll use a naive approach to to detect when models degrade in production:
 - **Track predictions** over time as new data arrives
 - **Monitor accuracy** across time periods
 - **Detect degradation** automatically when performance drops
@@ -40,7 +40,7 @@ Learn to detect when models degrade in production:
 
 ---
 
-### **Module 3: Automated Retraining Loop** 🔄
+### **Module 3: Model Monitoring 101 + Retraining Loop** 🔄
 **Duration:** 60-90 minutes
 **Prerequisites:** Complete Modules 1 & 2
 
