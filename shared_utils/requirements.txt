@@ -41,3 +41,6 @@ tqdm>=4.64.0  # Progress bars (optional)
 # pytest>=7.2.0
 # black>=22.10.0
 # flake8>=5.0.0
+
+
+streamlit

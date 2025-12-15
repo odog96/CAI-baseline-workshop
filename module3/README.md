@@ -25,9 +25,9 @@ We will run a series of scripts that act as a real pipeline. Each script produce
 1. **Job 0: 0\_simulate\_live\_data.py**  
    * **Action:** Simulates a batch of new, unlabeled production data with "drift" (new age patterns, new job categories).  
    * **Artifact:** Saves outputs/live\_unlabeled\_batch.csv.  
-2. **Job 1: 1\_check\_drift\_explicit.py**  
+2. **Job 1: 1\_check\_drift.py**  
    * **Action:** Reads both the banking\_train.csv (reference) and the new live\_unlabeled\_batch.csv (current).  
-   * **Detects:** Uses an *explicit* Evidently AI Test Suite to check for specific drift (e.g., in age and job).  
+   * **Detects:** Uses an Evidently AI Test Suite to check for specific drift (e.g., in age and job).  
    * **Artifacts:**  
      * 1\_drift\_report\_explicit.html: A rich, visual dashboard of the drift.  
      * outputs/drift\_status.json: A simple JSON file with {"status": "FAIL"}. This is our **pipeline trigger**.  
@@ -60,7 +60,7 @@ First, we'll run the two jobs that find the problem.
 
    * **Result:** Creates outputs/live\_unlabeled\_batch.csv.  
 2. **Run Drift Check:** Now, run the monitoring job:  
-   python module3/1\_check\_drift\_explicit.py
+   python module3/1\_check\_drift.py
 
    * **Observe:** The job will print **\!\!\! DATA DRIFT DETECTED\! \!\!\!** and fail.  
    * **Artifacts:** This creates 1\_drift\_report\_explicit.html and outputs/drift\_status.json.
@@ -72,10 +72,8 @@ This is the "pro" MLOps step. Let's publish our report.
 1. Go to the **Applications** tab in your CML project.  
 2. Click **New Application**.  
 3. Fill in the details:  
-   * **Name:** Data Drift Dashboard  
-   * **Script:** module3/app.py  
-   * **Kernel:** Python 3 (or standard)  
-   * **Resource Profile:** (Smallest is fine)  
+
+![application](images/application-detail.png)
 4. Click **Create Application**. After a moment, a URL will appear.  
 5. **Launch the URL:** You will see your interactive Evidently report\! This is what you would share with your team.
 

@@ -2,6 +2,35 @@
 
 This module implements a comprehensive model monitoring pipeline that tracks predictions over time and automatically detects when model accuracy degrades.
 
+## What We're Doing in This Module
+
+**The Real-World Problem:**
+
+In production, machine learning models don't stay accurate forever. As data changes over time (concept drift, distribution shift, etc.), model accuracy naturally degrades. Organizations need to monitor model performance and take action—like retraining—when accuracy drops below acceptable levels.
+
+**Our Approach:**
+
+Since we're in a workshop environment and don't have real production data flowing in over months, we're **simulating model degradation** to demonstrate monitoring and alerting workflows. Here's how:
+
+1. **Manufacturing Degradation**: We use `02_prepare_artificial_data.py` to create fake ground truth labels that intentionally force our model's accuracy to degrade over time. This lets us simulate what would naturally happen in production, but in a controlled, accelerated way.
+
+2. **Simulating Time Through Batches**: Each batch of data represents a different time period (e.g., Week 1, Week 2, etc.). By processing these batches sequentially, we simulate the passage of time and can watch accuracy decline period-by-period.
+
+3. **Triggering Alerts**: We set an **accuracy threshold** (e.g., 85%). When the model's accuracy drops below this threshold, our monitoring job detects the degradation and can trigger alerts or actions (like stopping the pipeline, sending notifications, or initiating retraining).
+
+**Key Difference from Module 1:**
+
+- **Module 1**: We created jobs manually through the CML UI
+- **Module 2**: We create jobs **programmatically** using scripts, but still trigger/run them through the UI
+
+This demonstrates how to automate infrastructure setup while maintaining manual control over execution.
+
+**Why This Matters:**
+
+This pattern is essential for production ML systems. By detecting degradation early and automatically triggering retraining, you can maintain model quality without manual intervention.
+
+---
+
 ## Overview
 
 The monitoring pipeline consists of **2 CML Jobs**:
@@ -34,69 +63,77 @@ Job 2: 03_monitoring_pipeline.py (Integrated Monitoring)
 - **Configurable Thresholds**: Adjust accuracy requirements and degradation sensitivity
 - **Comprehensive Logging**: Logs to both console and file (`data/monitoring_log.txt`)
 
-## ⚠️ Important: Execution Location
-
-All Module 2 commands must be run from the **PROJECT ROOT** (`/home/cdsw`), not from the module2 directory.
-
-This is because Module 2 scripts reference data created by Module 1 using relative paths like:
-- `module1/inference_data/engineered_inference_data.csv`
-
-These paths assume you're running from the project root.
-
-```bash
-# ✓ CORRECT: Run from project root
-cd /home/cdsw
-python module2/02_prepare_artificial_data.py
-
-# ✗ WRONG: Do NOT run from module2 directory
-cd /home/cdsw/module2
-python 02_prepare_artificial_data.py  # This will fail!
-```
-
 ---
 
 ## Quick Start
 
-### Step 1: Prepare Artificial Data
+### Step 1: Create Jobs Programmatically
 
-Run the setup script to create the artificial ground truth dataset with intentional degradation:
+Open and run the Jupyter notebook `01_create_jobs.ipynb` to create the monitoring jobs programmatically.
 
-```bash
-python module2/02_prepare_artificial_data.py
-```
+This notebook will create two CML jobs:
+- **Mod 2 Job 1: Prepare Artificial Data** - Generates the degraded dataset
+- **Mod 2 Job 2: Monitor Pipeline** - Runs the monitoring workflow
 
-This creates:
-- `data/artificial_ground_truth_data.csv` - Full dataset with engineered features, predictions, and artificial labels
-- `data/ground_truth_metadata.json` - Period configuration
+**What the notebook does:**
+- Creates job definitions using the CML API
+- Configures resources (CPU, memory, runtime)
+- Sets up the scripts to run
 
-### Step 2: Create CML Job
+### Step 2: Run Jobs Through the UI
 
-Create a single CML Job with this configuration:
+After creating the jobs, navigate to the **Jobs** tab in the CML UI:
 
-**Job: Monitor Pipeline**
-- Script: `module2/03_monitoring_pipeline.py`
-- CPU: 2 cores
-- Memory: 4 GB
-- Runtime: Python 3.10 (2024.10+)
+**2a. Run Data Preparation Job**
 
-### Step 3: Run the Pipeline
+![mod2-jobs](images/module2-jobs-execute-1.png)
 
-Execute the job to start monitoring all periods:
+1. Locate and click on **"Mod 2 Job 1: Prepare Artificial Data"**
+2. Click **"Run"**
+3. Wait for the job to complete successfully ✅
+4. This creates:
+   - `data/artificial_ground_truth_data.csv` - Full dataset with engineered features, predictions, and artificial labels
+   - `data/ground_truth_metadata.json` - Period configuration
 
-```bash
-# Via CML UI:
-# 1. Go to Jobs tab
-# 2. Click on "Monitor Pipeline"
-# 3. Click "Run Now"
-# 4. Monitor execution in job logs
-```
 
-The job will automatically:
-1. Load prepared data
-2. Process all periods sequentially
-3. Detect degradation (if any)
-4. Save results to `data/monitoring_results.json`
-5. Log all activity to `data/monitoring_log.txt`
+
+**2b. Run Monitoring Pipeline Job**
+
+1. Locate and click on **"Mod 2 Job 2: Monitor Pipeline"**
+2. Click **"Run"**
+3. **Expected outcome**: The job will run through several periods and then **FAIL** ❌ when accuracy drops below the threshold
+
+This is the expected behavior! The job failure signals that model degradation has been detected.
+
+![Image: Selecting Job 1 in UI](images/module2-jobs-execute-2.png)
+
+
+
+### Step 3: Inspect Job Logs and Diagnostics
+
+After Job 2 fails, examine the logs to understand what happened:
+
+1. Click on the failed job run (see image above)
+2. Review the **History** tab
+3. Make sure you are looking at **session** and not logs.
+4. Look for messages about:
+   - Accuracy metrics per period
+   - The specific period where degradation was detected
+   - The accuracy drop that triggered the failure
+
+![Image: Selecting Job 1 in UI](images/module2-jobs-execute-3.png)
+
+### Step 4: Analyze Model Metrics
+
+Open and run the Jupyter notebook `04_model_metrics_analysis.ipynb` for detailed diagnostics:
+
+**What this notebook shows:**
+- Period-by-period accuracy trends
+- Visualization of model degradation over time
+- Detailed metrics analysis
+- Recommendations for next steps (e.g., model retraining)
+
+This notebook helps you understand exactly when and how the model degraded.
 
 ## Data Architecture
 

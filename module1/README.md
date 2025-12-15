@@ -95,6 +95,12 @@ Open a session as follows. Make sure
 
 Make sure you enable spark and pick the spark 3.3.0 addon option.
 
+Once in the session, open up the terminal as shown below: 
+
+**Note** Througth out this lab always check you are in the right module folder. If you get a failure, check this first!
+
+![session-details](images/terminal.png)
+
 
 ### Step 1: Data Ingestion
 
@@ -301,6 +307,33 @@ This is where ML moves from experimental to operational:
 ### Step 5: Inference Pipeline
 
 **Purpose:** Build an automated workflow that takes new customer data, prepares it, and generates predictions at scale.
+
+
+⚠️ **Pre Step - Check** ⚠️
+⚠️ **Project Runtime Check** ⚠️
+
+Lets make sure that we have the runtime available to the project scope to create this Job (and the application in module 3). Follow the following steps to check for PBJ runtime, if not add it. 
+
+Ensuring you within you project scope, click on "**Project Settings**"
+
+![experiments](images/runtime-1.png)
+
+ click on "**Runtime**"
+ 
+![experiments](images/runtime-2.png)
+
+Check that both runtimes are present, if not
+
+![experiments](images/runtime-3.png)
+
+click "**add runtime**" then 
+add the runtime then 
+click "**submit**"
+
+![experiments](images/runtime-4.png)
+
+
+
 
 ⚠️ **IMPORTANT NOTE - Lab Environment Only:**
 ```

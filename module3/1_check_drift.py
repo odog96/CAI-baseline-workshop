@@ -6,7 +6,7 @@ import os
 from evidently.legacy.test_suite import TestSuite
 from evidently.legacy.tests import * # Import all standard tests
 
-print("--- Starting Explicit Monitoring Job (Step 1) ---")
+print("--- Starting Monitoring Job (Step 1) ---")
 
 # Define our data files
 REFERENCE_FILE = "/home/cdsw/module1/data/bank-additional/bank-additional-full.csv"
@@ -49,7 +49,7 @@ data_drift_suite = TestSuite(tests=[
 ])
 
 # 3. Run the tests
-print("Running explicit drift tests...")
+print("Running  drift tests...")
 data_drift_suite.run(current_data=current_data, 
                      reference_data=reference_data, 
                      column_mapping=None)
