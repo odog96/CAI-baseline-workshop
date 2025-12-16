@@ -40,12 +40,12 @@ We will run a series of scripts that act as a real pipeline. Each script produce
    * **Artifact:** Saves outputs/new\_labeled\_batch\_01.csv.  
 5. **Job 3: 3\_retrain\_model.py**  
    * **Trigger:** "Triggered" by the creation of the new labeled data.  
-   * **Action:** Combines the *original* training data with the *new* batch, trains a model\_v2, and logs it to an MLflow experiment.  
+   * **Action:** Combines the *original* training data with the *new* batch, trains a model, and logs it to an MLflow experiment.  
    * **Artifact:** Saves the MLflow run\_id to outputs/retrain\_run\_info.json.  
 6. **Job 4: 4\_register\_and\_deploy.py**  
    * **Trigger:** Reads the run\_id from outputs/retrain\_run\_info.json.  
    * **Action:** Uses the cmlapi client to register, build, and deploy the new model from that run\_id.  
-   * **Artifact:** A new, deployed banking\_campaign\_predictor\_v2 model.
+   * **Artifact:** A new, deployed banking\_campaign\_predictor model (same name, new version).
 
 ## **3\. Hands-On Lab Instructions**
 
@@ -101,7 +101,7 @@ Now we'll run the rest of the pipeline, which is "triggered" by the artifacts fr
 You have successfully simulated an end-to-end, event-driven MLOps pipeline.
 
 1. Go to the **Models** tab in your CML project.  
-2. You will see your new model: **banking\_campaign\_predictor\_v2**.  
+2. You will see your new model: **banking\_campaign\_predictor**.  
 3. Click on it. You will see that it has been **Built** and **Deployed**.  
 4. You now have a new, smarter model serving as an API endpoint, all triggered by a proactive drift detection test\!
 

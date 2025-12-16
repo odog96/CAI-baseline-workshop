@@ -50,16 +50,6 @@ This lab walks you through building a **bank marketing prediction model** that c
 
 ---
 
-## Prerequisites
-
-Before starting, ensure you have:
-- Access to Cloudera AI project workspace
-- A terminal/command line interface
-- Python environment with required packages
-- Sufficient disk space (~500MB for data and models)
-
----
-
 ## Lab Structure
 
 The lab is organized as a numbered sequence of scripts and notebooks:
@@ -89,6 +79,13 @@ Follow the instructors guide to get you to this portal page:
 
 Click into CAI. 
 Find your project and click into it. 
+
+The first thing you'll want to do is make yourself the project owner - follow the directions show below.
+
+![project-owner](images/update-project-owner.png)
+
+
+
 Open a session as follows. Make sure
 
 ![session-details](images/session-details.png)
@@ -98,6 +95,7 @@ Make sure you enable spark and pick the spark 3.3.0 addon option.
 Once in the session, open up the terminal as shown below: 
 
 **Note** Througth out this lab always check you are in the right module folder. If you get a failure, check this first!
+
 
 ![session-details](images/terminal.png)
 
@@ -286,8 +284,6 @@ Model is now live! Ready to receive prediction requests.
 ============================================================
 ```
 
-**[PLACEHOLDER FOR IMAGE: Screenshot of deployed model in Cloudera AI showing endpoint status and health]**
-
 **Next: Verify Deployment in Cloudera AI**
 1. Go to your project's **Models** or **Deployments** tab
 2. Find the deployed model (bank_marketing_model)
@@ -419,6 +415,13 @@ We need to update the config file with model details so that various scripts can
 
 ![job-create-ui](images/job-create-6.png)
 
+
+you'll see the dependencies of jobs set up. 
+
+![job-create-ui](images/job-dependency.png)
+
+
+finally you can run by hitting '**run as** for the first (inference data prep job)
 
 ```
 **Output File:**

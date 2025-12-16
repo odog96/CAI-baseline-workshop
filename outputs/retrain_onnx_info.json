@@ -1,11 +1,11 @@
 {
-  "run_id": "e118-i1q7-59ys-0byb",
-  "experiment_id": "tgo7-g5e2-zf5a-zgpp",
-  "experiment_name": "banking_onnx_retraining_pipeline_ozarate",
+  "run_id": "9g73-4hea-zc6e-6de9",
+  "experiment_id": "wk8q-r0b2-9gue-pwip",
+  "experiment_name": "BANKING_ONNX_RETRAINING_PIPELINE_ozarate",
   "registered_model_name": "BankingCampaignPredictor_ONNX_ozarate",
   "model_format": "onnx",
-  "f1_score": 0.6343434343434343,
-  "accuracy": 0.9180810138040281,
+  "f1_score": 0.6422478675363773,
+  "accuracy": 0.9193256392849061,
   "training_samples": 44188,
-  "onnx_version": "1.19.1"
+  "onnx_version": "1.20.0"
 }
