@@ -43,31 +43,28 @@ python create_onnx_model.py
 
 Go to the main CDP (Cloudera Data Platform) page.
 
-**[Add screenshot: CDP main navigation page]**
+![main-page](images/cai-portal.png)
 
 ### 2.2 Access Machine Learning Workspace
 
 From the CDP menu, select **Machine Learning**.
 
-**[Add screenshot: CDP menu with Machine Learning highlighted]**
+![main-page](images/registered-model.png)
 
 ### 2.3 View Registered Models
 
 In the Cloudera AI interface:
 1. Navigate to **DEPLOYMENTS** → **Registered Models**
 2. Select the appropriate model registry
-
-**[Add screenshot: Cloudera AI sidebar showing Registered Models option]**
-
-### 2.4 Locate Your Model
-
-1. Pick the right model registry from the dropdown
-2. Look for your model - it will be identified with your username
+3. Look for your model - it will be identified with your username
    - Model name format: `BankingCampaignPredictor_ONNX_<username>`
+
+![main-page](images/registered-model-2.png)
+
 
 **[Add screenshot: Registered Models list with model highlighted]**
 
-### 2.5 View Model Details
+### 2.4 View Model Details
 
 Click on your model to see important information:
 - Model ID
@@ -76,9 +73,9 @@ Click on your model to see important information:
 - Model version
 - Created date and source
 
-**[Add screenshot: Model details page showing metrics and parameters]**
+![main-page](images/registered-model-3.png)
 
-### 2.6 Deploy the Model
+### 2.5 Deploy the Model
 
 1. Click the **Deploy** button in the top right
 2. A dialog will appear: **Deploy Model**
@@ -87,9 +84,11 @@ Click on your model to see important information:
    - Inference Service: `go01-inference` (or your assigned service)
 4. Click **Deploy**
 
-**[Add screenshot: Deploy Model dialog with environment selection]**
+![main-page](images/registered-model-4.png)
 
-### 2.7 Configure Deployment Settings
+![main-page](images/registered-model-5.png)
+
+### 2.6 Configure Deployment Settings
 
 Fill in the deployment configuration:
 
@@ -107,11 +106,11 @@ Fill in the deployment configuration:
   - Minimum: 1
   - Maximum: 3
 
-**[Add screenshot: Deployment configuration form with resource settings]**
+![main-page](images/deploy-model-1.png)
 
 Click **Deploy** to start the deployment.
 
-### 2.8 Monitor Deployment
+### 2.7 Monitor Deployment
 
 The deployment will take a few minutes. You can monitor the status:
 - **Deploying**: Model is being deployed
@@ -131,24 +130,8 @@ Open and run `module4_compare_endpoints.ipynb`:
 
 ```bash
 # In your CML workbench, open:
-module4_compare_endpoints.ipynb
+02_compare_endpoints.ipynb
 ```
-
-### Configure the Notebook
-
-**Update the following values in the notebook:**
-
-1. **CML Model Endpoint** (from Module 1):
-   ```python
-   CML_MODEL_ENDPOINT = "your-module1-endpoint-url"
-   CML_ACCESS_KEY = "your-api-key"
-   ```
-
-2. **AI Inference Service Endpoint** (from Step 2):
-   ```python
-   BASE_URL = "your-ai-inference-endpoint-url"
-   MODEL_NAME = "your-model-id"
-   ```
 
 ### Run All Cells
 
