@@ -24,50 +24,25 @@ We will run a series of scripts that act as a real pipeline. Each script produce
 
 1. **Job 0: 0\_simulate\_live\_data.py**  
    * **Action:** Simulates a batch of new, unlabeled production data with "drift" (new age patterns, new job categories).  
-   * **Artifact:** Saves outputs/live\_unlabeled\_batch.csv.  
+   * **Artifact:** Saves outputs/live\_unlabeled\_batch.csv.
+   *  **Simulate Live Data:** Open a CML Workbench terminal and run:  
+   python module3/0\_simulate\_live\_data.py
+
+   * **Result:** Creates outputs/live\_unlabeled\_batch.csv.  
 2. **Job 1: 1\_check\_drift.py**  
    * **Action:** Reads both the banking\_train.csv (reference) and the new live\_unlabeled\_batch.csv (current).  
    * **Detects:** Uses an Evidently AI Test Suite to check for specific drift (e.g., in age and job).  
    * **Artifacts:**  
      * 1\_drift\_report\_explicit.html: A rich, visual dashboard of the drift.  
-     * outputs/drift\_status.json: A simple JSON file with {"status": "FAIL"}. This is our **pipeline trigger**.  
-3. **Visualization: app.py**  
-   * **Action:** This script is *launched as a CML Application*.  
-   * **Result:** It hosts the 1\_drift\_report\_explicit.html file on a permanent, shareable URL for the team to review.  
-4. **Job 2: 2\_simulate\_labeling\_job.py**  
-   * **Trigger:** This job *first* reads outputs/drift\_status.json.  
-   * **Action:** If status \== "FAIL", it proceeds to simulate the data engineering work of acquiring labels for the new, drifted data.  
-   * **Artifact:** Saves outputs/new\_labeled\_batch\_01.csv.  
-5. **Job 3: 3\_retrain\_model.py**  
-   * **Trigger:** "Triggered" by the creation of the new labeled data.  
-   * **Action:** Combines the *original* training data with the *new* batch, trains a model, and logs it to an MLflow experiment.  
-   * **Artifact:** Saves the MLflow run\_id to outputs/retrain\_run\_info.json.  
-6. **Job 4: 4\_register\_and\_deploy.py**  
-   * **Trigger:** Reads the run\_id from outputs/retrain\_run\_info.json.  
-   * **Action:** Uses the cmlapi client to register, build, and deploy the new model from that run\_id.  
-   * **Artifact:** A new, deployed banking\_campaign\_predictor model (same name, new version).
-
-## **3\. Hands-On Lab Instructions**
-
-**Prerequisite:** Ensure you have the banking\_train.csv file in your project. All scripts should be in a module3/ folder.
-
-### **Step 1: Simulate and Detect Drift**
-
-First, we'll run the two jobs that find the problem.
-
-1. **Simulate Live Data:** Open a CML Workbench terminal and run:  
-   python module3/0\_simulate\_live\_data.py
-
-   * **Result:** Creates outputs/live\_unlabeled\_batch.csv.  
-2. **Run Drift Check:** Now, run the monitoring job:  
+     * outputs/drift\_status.json: A simple JSON file with {"status": "FAIL"}. This is our **pipeline trigger**.
+     * **Run Drift Check:** Now, run the monitoring job:  
    python module3/1\_check\_drift.py
-
    * **Observe:** The job will print **\!\!\! DATA DRIFT DETECTED\! \!\!\!** and fail.  
    * **Artifacts:** This creates 1\_drift\_report\_explicit.html and outputs/drift\_status.json.
-
-### **Step 2: Publish the Visual Dashboard (Option B)**
-
-This is the "pro" MLOps step. Let's publish our report.
+3. **Visualization: reporting_launch_app.py**  
+   * **Action:** This script is *launched as a CML Application*.  
+   * **Result:** It hosts the 1\_drift\_report\_explicit.html file on a permanent, shareable URL for the team to review.
+   * This is the "pro" MLOps step. Let's publish our report.
 
 1. Go to the **Applications** tab in your CML project.  
 2. Click **New Application**.  
@@ -76,6 +51,26 @@ This is the "pro" MLOps step. Let's publish our report.
 ![application](images/application-detail.png)
 4. Click **Create Application**. After a moment, a URL will appear.  
 5. **Launch the URL:** You will see your interactive Evidently report\! This is what you would share with your team.
+4. **Job 2: 3\_simulate\_labeling\_job.py**  
+   * **Trigger:** This job *first* reads outputs/drift\_status.json.  
+   * **Action:** If status \== "FAIL", it proceeds to simulate the data engineering work of acquiring labels for the new, drifted data.  
+   * **Artifact:** Saves outputs/new\_labeled\_batch\_01.csv.  
+5. **Job 3: 4\_retrain\_model.py**  
+   * **Trigger:** "Triggered" by the creation of the new labeled data.  
+   * **Action:** Combines the *original* training data with the *new* batch, trains a model, and logs it to an MLflow experiment.  
+   * **Artifact:** Saves the MLflow run\_id to outputs/retrain\_run\_info.json.  
+6. **Job 4: 5\_register\_and\_deploy.py**  
+   * **Trigger:** Reads the run\_id from outputs/retrain\_run\_info.json.  
+   * **Action:** Uses the cmlapi client to register, build, and deploy the new model from that run\_id.  
+   * **Artifact:** A new, deployed banking\_campaign\_predictor model (same name, new version).
+
+## **3\. Hands-On Lab Instructions**
+
+**Prerequisite:** Ensure you have the banking\_train.csv file in your project. All scripts should be in a module3/ folder.
+
+### **Step 2: Publish the Visual Dashboard (Option B)**
+
+
 
 ### **Step 3: Trigger the Retraining Pipeline**
 
