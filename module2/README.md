@@ -36,9 +36,9 @@ This pattern is essential for production ML systems. By detecting degradation ea
 The monitoring pipeline consists of **2 CML Jobs**:
 
 ```
-Job 1: 02_prepare_artificial_data.py (One-time setup)
+Job 1: 02.1_job1_prepare_artificial_data.py (One-time setup)
     ↓
-Job 2: 03_monitoring_pipeline.py (Integrated Monitoring)
+Job 2: 02.2_job2_monitoring_pipeline.py (Integrated Monitoring)
     ├─ Period 0: Get predictions → Load ground truth → Check model
     ├─ Period 1: Get predictions → Load ground truth → Check model
     ├─ Period 2: Get predictions → Load ground truth → Check model
@@ -48,7 +48,7 @@ Job 2: 03_monitoring_pipeline.py (Integrated Monitoring)
 **Job Execution Pattern**:
 - Number of periods = Total data size / Batch size
 - With 1000 samples and batch size 250 = 4 periods
-- `03_monitoring_pipeline.py` runs **once** and processes **all periods sequentially**
+- `02.2_job2_monitoring_pipeline.py` runs **once** and processes **all periods sequentially**
 - Single job manages period state internally (no external state files needed)
 - Automatically detects degradation and exits gracefully
 - All results saved to `data/monitoring_results.json`

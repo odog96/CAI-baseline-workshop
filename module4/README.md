@@ -22,7 +22,7 @@ Navigate to the module4 folder and execute:
 
 ```bash
 cd module4
-python create_onnx_model.py
+python 01_create_onnx_model.py
 ```
 
 ### What This Script Does

@@ -77,17 +77,17 @@ We will run a series of scripts that act as a real pipeline. Each script produce
 Now we'll run the rest of the pipeline, which is "triggered" by the artifacts from Step 1\.
 
 1. **Run Label Acquisition:**  
-   python module3/2\_simulate\_labeling\_job.py
+   python module3/3\_simulate\_labeling\_job.py
 
    * **Observe:** It will first print "Found trigger: Status \= FAIL" and then proceed.  
    * **Result:** Creates outputs/new\_labeled\_batch\_01.csv.  
 2. **Run Retraining:**  
-   python module3/3\_retrain\_model.py
+   python module3/4\_retrain\_model.py
 
    * **Observe:** This job trains the new model and logs it to MLflow.  
    * **Result:** Creates outputs/retrain\_run\_info.json.  
 3. **Run Register & Deploy:**  
-   python module3/4\_register\_and\_deploy.py
+   python module3/5\_register\_and\_deploy.py
 
    * **Observe:** This is the longest step. It will print its progress as it registers, builds, and deploys the new model.
 
