@@ -129,7 +129,7 @@ except ApiException as e:
 print("\n[5/6] Creating model build...")
 
 # Using the same standard runtime from your example
-runtime_id = "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.10-standard:2025.09.1-b5"
+runtime_id = "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.10-standard:2026.01.1-b6"
 
 create_build_request = cmlapi.CreateModelBuildRequest(
     registered_model_version_id=str(model_version_id),
