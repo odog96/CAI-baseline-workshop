@@ -1,4 +1,4 @@
-name: ML Ops Hands on Lab 
+name: ML Ops Hands on Lab
 description: "Prototype to demonstrate machine learning operations in production"
 author: "Cloudera"
 date: "2025-12-11"
@@ -7,21 +7,38 @@ prototype_version: 1.0
 environment_variables:
 
   CONNECTION_NAME:
-    default: "go01-aw-dl"
-    description: "datalake connection name"
-runtimes: 
-  - editor: Workbench
-    kernel: Python 3.10
+    default: ""
+    description: "Name of the Cloudera AI Spark data connection, exactly as it appears in Project Settings > Data Connections. Leave blank to auto-discover when the workspace has exactly one Spark connection."
+runtimes:
+  # Advisory only: this block pre-fills the launch form, it does not constrain
+  # the workspace. It matters because the dependency install writes to
+  # ~/.local/lib/python3.<minor>/site-packages, which is NOT shared across
+  # Python minor versions -- so every session, job and model build has to land
+  # on the same minor as the install or it starts with no packages at all.
+  #
+  # `version:` is deliberately NOT pinned. A pin of "2024.10" is what broke this
+  # on prem: that version does not exist here, so the entry matched nothing.
+  # Omitting it means "newest matching" and keeps this file portable between
+  # public cloud and on-prem workspaces.
+  - editor: JupyterLab
+    kernel: Python 3.12
     edition: Standard
-    version: "2024.10"
-    addons: [Spark 3.3.0 - CDE 1.22.0]
-    
+    addons: ["Spark 3.5.4 - CDP 7.3.2.0"]
+  - editor: PBJ Workbench
+    kernel: Python 3.12
+    edition: Standard
+    addons: ["Spark 3.5.4 - CDP 7.3.2.0"]
+
 tasks:
   - type: run_session
     name: Install Dependencies
     script: shared_utils/install-dependencies.py
     short_summary: Install Dependencies
     kernel: python3
-    cpu: 8
-    memory: 16
-
+    # Kubernetes schedules on requests, not usage. cpu: 8 needed a contiguous
+    # 8-core hole on one node and found none, giving "0/12 nodes are available:
+    # 6 Insufficient cpu, 6 node(s) had untolerated taint(s)". The task is a
+    # single-threaded pip install of wheel-only packages with peak RSS under
+    # 2 GB, so the extra cores bought nothing anyway.
+    cpu: 2
+    memory: 8

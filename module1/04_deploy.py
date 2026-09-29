@@ -44,6 +44,11 @@ except ImportError:
         "description": "Banking campaign prediction model"
     }
 
+# Not optional, unlike API_CONFIG above: there is no sensible default for a
+# runtime image identifier, and guessing one is what broke this script on prem.
+# Let the ImportError surface rather than failing later with a bad runtime.
+from shared_utils import resolve_runtime
+
 # ============================================================================
 # Logging Setup
 # ============================================================================
@@ -499,7 +504,13 @@ logger.info("=" * 60)
 logger.info("STEP 5: Create Model Build")
 logger.info("=" * 60)
 
-runtime_id = "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.10-standard:2026.01.1-b6"
+# Discovered, not hardcoded. The previous literal embedded a registry host, a
+# Python minor version and a build tag, none of which are portable -- it matched
+# nothing on an on-prem workspace. resolve_runtime() defaults to the running
+# interpreter's Python version, which is what keeps the serving runtime able to
+# unpickle a model trained in this session.
+runtime_id = resolve_runtime(editor="PBJ Workbench", edition="Standard")
+logger.info(f"Resolved serving runtime: {runtime_id}")
 
 # ✅ FIX 3: Use CreateModelBuildRequest with registered_model_version_id
 create_build_request = cmlapi.CreateModelBuildRequest(

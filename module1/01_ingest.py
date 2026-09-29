@@ -21,18 +21,30 @@ import pandas as pd
 import numpy as np
 import time
 from datetime import datetime
-from pyspark.sql import SparkSession
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared_utils import (
     DATALAKE_CONFIG,
-    get_spark_session
+    get_data_connection,
+    spark_available,
 )
 
+# All paths are anchored to this script's directory, never to the working
+# directory. A CML job runs with cwd=/home/cdsw while an interactive session in
+# the file tree may run with cwd=/home/cdsw/module1 -- so cwd-relative paths put
+# the data in two different places depending on how the script was started, and
+# the training helpers (which use absolute paths under module1/) then cannot
+# find it.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(SCRIPT_DIR, "data")
+INFER_DIR = os.path.join(SCRIPT_DIR, "inference_data")
+ZIP_PATH = os.path.join(DATA_DIR, "bank-additional.zip")
+CSV_PATH = os.path.join(DATA_DIR, "bank-additional", "bank-additional-full.csv")
 
-def download_data(url, local_zip_path, local_csv_path):
+
+def download_data(url, local_zip_path, extract_dir):
     """Download and extract the dataset"""
     download_start = time.time()
 
@@ -41,17 +53,17 @@ def download_data(url, local_zip_path, local_csv_path):
     urllib.request.urlretrieve(url, local_zip_path)
     print(f"Downloaded to {local_zip_path}")
 
-    # Extract to data/ directory (not local_csv_path's dirname)
     extract_start = time.time()
     with zipfile.ZipFile(local_zip_path, 'r') as zip_ref:
-        zip_ref.extractall("data/")  # Extract directly to data/
+        zip_ref.extractall(extract_dir)
     extract_elapsed = time.time() - extract_start
 
-    print(f"Extracted to data/ ({extract_elapsed:.2f} seconds)")
+    print(f"Extracted to {extract_dir} ({extract_elapsed:.2f} seconds)")
 
     download_elapsed = time.time() - download_start
     print(f"Total download time: {download_elapsed:.2f} seconds")
-    
+
+
 
 def load_and_inspect_data(csv_path):
     """
@@ -92,50 +104,85 @@ def load_and_inspect_data(csv_path):
 
 def write_to_datalake(df, database_name, table_name, username):
     """
-    Write Pandas DataFrame to data lake using Spark
+    Write Pandas DataFrame to the data lake using Spark.
+
+    This step is a demonstration of the data lake round-trip, and it is
+    deliberately NON-FATAL. The CSV is already on the project filesystem by the
+    time this runs, and the only downstream consumer of the table is the EDA
+    notebook -- every other step in modules 1-4 reads the CSV. So when Spark,
+    the data connection, or the metastore is unavailable, skipping costs one
+    demonstration rather than the whole workshop.
+
+    Returns:
+        The fully-qualified table name on success, or None if skipped.
     """
     write_start = time.time()
 
     print(f"\nWriting to data lake with user: {username}")
 
-    # Get connection name from environment (matches yaml)
-    CONNECTION_NAME = os.environ.get("CONNECTION_NAME", "se-aws-edl")  #
-    print(f"Using connection: {CONNECTION_NAME}")
+    if not spark_available():
+        print("⊘ SKIPPED: pyspark is not available in this runtime.")
+        print("  Spark comes from a runtime add-on, not the Standard runtime.")
+        print("  To run this step, start a session with a Spark add-on enabled")
+        print("  (e.g. 'Spark 3.5.4 - CDP 7.3.2.0').")
+        print("  Everything downstream reads the CSV, so the workshop continues.")
+        return None
 
-    # Get Spark from CML data connection
-    import cml.data_v1 as cmldata
-    conn = cmldata.get_connection(CONNECTION_NAME)
-    spark = conn.get_spark_session()
+    try:
+        conn = get_data_connection()
+        spark = conn.get_spark_session()
+    except Exception as error:
+        print(f"⊘ SKIPPED: could not open a Spark session ({type(error).__name__}: {error})")
+        print("  Check CONNECTION_NAME in Project Settings > Advanced against the")
+        print("  names in Project Settings > Data Connections.")
+        print("  Everything downstream reads the CSV, so the workshop continues.")
+        return None
 
-    # Fix Pandas compatibility
+    # pandas 2.0 removed DataFrame.iteritems, which older pyspark still calls
+    # from createDataFrame. This shim is load-bearing, not dead code.
     if not hasattr(pd.DataFrame, 'iteritems'):
         pd.DataFrame.iteritems = pd.DataFrame.items
 
-    # Convert to Spark DataFrame
-    conversion_start = time.time()
-    spark_df = spark.createDataFrame(df)
-    conversion_elapsed = time.time() - conversion_start
-    print(f"Spark DataFrame conversion: {conversion_elapsed:.2f} seconds")
-
     # Create unique database and table names
-    #full_db = "DEFAULT_ML_WORKSHOP"
     full_db = f"{database_name}_{username}".upper()
     full_table = f"{table_name}_{username}".upper()
     full_path = f"{full_db}.{full_table}"
 
-    # Create database
-    spark.sql(f"CREATE DATABASE IF NOT EXISTS {full_db}")
+    try:
+        conversion_start = time.time()
+        spark_df = spark.createDataFrame(df)
+        conversion_elapsed = time.time() - conversion_start
+        print(f"Spark DataFrame conversion: {conversion_elapsed:.2f} seconds")
 
-    # Write as Iceberg
-    iceberg_start = time.time()
-    spark_df.writeTo(full_path).using("iceberg").createOrReplace()
-    iceberg_elapsed = time.time() - iceberg_start
+        spark.sql(f"CREATE DATABASE IF NOT EXISTS {full_db}")
 
-    print(f"✓ Data written to {full_path}")
-    print(f"Iceberg write time: {iceberg_elapsed:.2f} seconds")
+        # Prefer Iceberg. Fall back to a plain managed table if the Iceberg
+        # extensions are not configured on this connection -- the workshop only
+        # needs the data to be queryable, and the table format is incidental to
+        # every downstream step.
+        try:
+            iceberg_start = time.time()
+            spark_df.writeTo(full_path).using("iceberg").createOrReplace()
+            print(f"✓ Data written to {full_path} as ICEBERG "
+                  f"({time.time() - iceberg_start:.2f} seconds)")
+        except Exception as iceberg_error:
+            print(f"! Iceberg write failed ({type(iceberg_error).__name__}: {iceberg_error})")
+            print("  Falling back to a standard Hive table...")
+            hive_start = time.time()
+            spark_df.write.mode("overwrite").saveAsTable(full_path)
+            print(f"✓ Data written to {full_path} as a HIVE TABLE "
+                  f"({time.time() - hive_start:.2f} seconds)")
+    except Exception as error:
+        print(f"⊘ SKIPPED: write to {full_path} failed "
+              f"({type(error).__name__}: {error})")
+        print("  Most likely a Ranger permission on CREATE DATABASE, or a")
+        print("  metastore warehouse path the workshop user cannot write to.")
+        print("  Everything downstream reads the CSV, so the workshop continues.")
+        return None
 
     write_elapsed = time.time() - write_start
     print(f"Total data lake write time: {write_elapsed:.2f} seconds")
+    return full_path
 
 
 def create_sample_inference_data(df):
@@ -153,7 +200,7 @@ def create_sample_inference_data(df):
     print("\nCreating sample inference data...")
 
     # Create inference_data directory if it doesn't exist
-    os.makedirs("inference_data", exist_ok=True)
+    os.makedirs(INFER_DIR, exist_ok=True)
 
     # Take a random sample (1000 records for demo)
     np.random.seed(42)
@@ -163,7 +210,7 @@ def create_sample_inference_data(df):
     inference_df = sample_df.drop(columns=['y'])
 
     # Save as CSV with semicolon delimiter (matching training data format)
-    output_path = "inference_data/raw_inference_data.csv"
+    output_path = os.path.join(INFER_DIR, "raw_inference_data.csv")
     inference_df.to_csv(output_path, sep=";", index=False)
 
     inference_elapsed = time.time() - inference_start
@@ -193,34 +240,34 @@ def main():
 
     # Configuration
     DATA_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank-additional.zip"
-    LOCAL_ZIP = "data/bank-additional.zip"
-    #LOCAL_CSV = "data/bank-additional/bank-additional-full.csv"
-    LOCAL_CSV = "data/bank-additional-full.csv"
-    read_local_csv = "data/bank-additional/bank-additional-full.csv"
 
     # Create data directory if it doesn't exist
-    os.makedirs("data", exist_ok=True)
+    os.makedirs(DATA_DIR, exist_ok=True)
 
     # Step 1: Download data
     print("\n" + "-" * 60)
     print("STEP 1: Download Data")
     print("-" * 60)
-    if not os.path.exists(LOCAL_CSV):
-        download_data(DATA_URL, LOCAL_ZIP, LOCAL_CSV)
+    # The skip-check tests the same path that step 2 reads. It used to test
+    # data/bank-additional-full.csv, which nothing ever creates, so the download
+    # repeated on every run and a network failure surfaced as a confusing
+    # FileNotFoundError from read_csv instead of a download error.
+    if not os.path.exists(CSV_PATH):
+        download_data(DATA_URL, ZIP_PATH, DATA_DIR)
     else:
-        print(f"Data already exists at {LOCAL_CSV}")
+        print(f"Data already exists at {CSV_PATH}")
 
     # Step 2: Load and inspect
     print("\n" + "-" * 60)
     print("STEP 2: Load and Inspect Data")
     print("-" * 60)
-    df = load_and_inspect_data(read_local_csv)
+    df = load_and_inspect_data(CSV_PATH)
 
     # Step 3: Write to data lake
     print("\n" + "-" * 60)
     print("STEP 3: Write to Data Lake")
     print("-" * 60)
-    write_to_datalake(
+    table_path = write_to_datalake(
         df,
         DATALAKE_CONFIG["database_name"],
         DATALAKE_CONFIG["table_name"],
@@ -243,6 +290,14 @@ def main():
     print(f"Total execution time: {script_elapsed:.2f} seconds ({script_elapsed/60:.2f} minutes)")
     print("=" * 60)
     print("✅ Ingestion complete!")
+    print(f"\nLocal data (used by every downstream step):")
+    print(f"  • {CSV_PATH}")
+    print(f"  • {os.path.join(INFER_DIR, 'raw_inference_data.csv')}")
+    if table_path:
+        print(f"Data lake table (used by 02_eda_notebook.ipynb):\n  • {table_path}")
+    else:
+        print("Data lake table: skipped -- see STEP 3 above. This is not fatal;")
+        print("  02_eda_notebook.ipynb falls back to reading the CSV.")
     print("\nNext steps:")
     print("  • Training pipeline: 02_eda_feature_engineering.ipynb → 03_train_quick.py")
     print("  • Inference pipeline: 05_inference_data_prep.py → 06_inference_predict.py")

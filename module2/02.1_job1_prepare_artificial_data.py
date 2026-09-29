@@ -33,6 +33,8 @@ import os
 from datetime import datetime
 import random
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Configuration
 # ============================================================
 # CRITICAL: BATCH_SIZE must be synchronized with Job 03.1
@@ -186,8 +188,12 @@ def main():
     print("\nPHASE 1: Load Source Data")
     print("-" * 80)
 
-    engineered_data = load_engineered_data("module1/inference_data/engineered_inference_data.csv")
-    predictions = load_predictions("module1/inference_data/predictions.csv")
+    # Anchored to the repo root rather than the working directory: a CML job
+    # runs with cwd=/home/cdsw but an interactive session may not.
+    infer_dir = os.path.join(PROJECT_ROOT, "module1", "inference_data")
+    engineered_data = load_engineered_data(
+        os.path.join(infer_dir, "engineered_inference_data.csv"))
+    predictions = load_predictions(os.path.join(infer_dir, "predictions.csv"))
 
     # Calculate periods from actual data size
     # ==================== IMPORTANT ====================

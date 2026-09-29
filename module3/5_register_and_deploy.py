@@ -16,6 +16,9 @@ except NameError:
     # In Jupyter notebooks, __file__ is not defined
     BASE_DIR = os.getcwd()
 
+sys.path.insert(0, BASE_DIR)
+from shared_utils import resolve_runtime
+
 # ============================================================================
 # Step 1: Load info from the retraining job
 # ============================================================================
@@ -128,8 +131,11 @@ except ApiException as e:
 # ============================================================================
 print("\n[5/6] Creating model build...")
 
-# Using the same standard runtime from your example
-runtime_id = "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.10-standard:2026.01.1-b6"
+# Discovered, not hardcoded -- see shared_utils/runtime.py. The previous literal
+# embedded a registry host, Python minor and build tag, and matched nothing on an
+# on-prem workspace.
+runtime_id = resolve_runtime(editor="PBJ Workbench", edition="Standard")
+print(f"   Resolved serving runtime: {runtime_id}")
 
 create_build_request = cmlapi.CreateModelBuildRequest(
     registered_model_version_id=str(model_version_id),

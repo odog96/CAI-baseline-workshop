@@ -42,12 +42,18 @@ def setup_mlflow():
 
 def load_data():
     """Load the raw dataset for preprocessing and feature engineering"""
-    data_path = "/home/cdsw/module1/data/bank-additional/bank-additional-full.csv"
+    # Derived from this file's location (helpers/ -> module1/) rather than a
+    # hardcoded /home/cdsw path, so it stays correct if the project root moves.
+    # This is the same directory 01_ingest.py writes to.
+    module1_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_path = os.path.join(module1_dir, "data", "bank-additional",
+                             "bank-additional-full.csv")
 
     if not os.path.exists(data_path):
         raise FileNotFoundError(
             f"Raw data not found at {data_path}\n"
-            "Expected raw banking data file not available!"
+            "Run module1/01_ingest.py first -- it downloads and extracts the "
+            "dataset to this location."
         )
 
     df = pd.read_csv(data_path, sep=";")

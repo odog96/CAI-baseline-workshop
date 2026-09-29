@@ -42,9 +42,11 @@ def drop_database_and_tables():
     # Get username
     USERNAME = os.environ.get("PROJECT_OWNER", "default_user")
     
-    # Get connection
-    CONNECTION_NAME = os.environ.get("CONNECTION_NAME", "go01-aw-dl")
-    
+    # Get connection. Resolved via the shared helper rather than a hardcoded
+    # public-cloud default, which could never resolve on prem.
+    from shared_utils.data_connection import get_connection_name
+    CONNECTION_NAME = get_connection_name()
+
     try:
         print(f"\nConnecting to data lake: {CONNECTION_NAME}")
         conn = cmldata.get_connection(CONNECTION_NAME)
