@@ -26,9 +26,12 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared_utils import (
-    DATALAKE_CONFIG,
     get_data_connection,
+    safe_username,
     spark_available,
+    workshop_database,
+    workshop_database_location,
+    workshop_table,
 )
 
 # All paths are anchored to this script's directory, never to the working
@@ -102,7 +105,7 @@ def load_and_inspect_data(csv_path):
     return df
 
 
-def write_to_datalake(df, database_name, table_name, username):
+def write_to_datalake(df, username=None):
     """
     Write Pandas DataFrame to the data lake using Spark.
 
@@ -118,7 +121,18 @@ def write_to_datalake(df, database_name, table_name, username):
     """
     write_start = time.time()
 
-    print(f"\nWriting to data lake with user: {username}")
+    # Names and location come from shared_utils.naming so that this script, the
+    # EDA notebook and reset.py can never disagree about where a participant's
+    # data lives.
+    full_db = workshop_database(username)
+    full_table = workshop_table(username)
+    full_path = f"{full_db}.{full_table}"
+    db_location = workshop_database_location(username)
+
+    print(f"\nWriting to data lake as user: {safe_username(username)}")
+    print(f"  Database: {full_db}")
+    print(f"  Table:    {full_path}")
+    print(f"  Location: {db_location}")
 
     if not spark_available():
         print("⊘ SKIPPED: pyspark is not available in this runtime.")
@@ -143,18 +157,21 @@ def write_to_datalake(df, database_name, table_name, username):
     if not hasattr(pd.DataFrame, 'iteritems'):
         pd.DataFrame.iteritems = pd.DataFrame.items
 
-    # Create unique database and table names
-    full_db = f"{database_name}_{username}".upper()
-    full_table = f"{table_name}_{username}".upper()
-    full_path = f"{full_db}.{full_table}"
-
     try:
         conversion_start = time.time()
         spark_df = spark.createDataFrame(df)
         conversion_elapsed = time.time() - conversion_start
         print(f"Spark DataFrame conversion: {conversion_elapsed:.2f} seconds")
 
-        spark.sql(f"CREATE DATABASE IF NOT EXISTS {full_db}")
+        # An explicit LOCATION under the EXTERNAL warehouse, not the site default.
+        # With no LOCATION the database inherits hive.metastore.warehouse.dir --
+        # the managed, ACID-controlled tablespace, which Ranger typically reserves
+        # for the Hive service user. In a lab where every participant creates
+        # their own database, that default is the most likely way for all of them
+        # to fail at once.
+        spark.sql(
+            f"CREATE DATABASE IF NOT EXISTS `{full_db}` LOCATION '{db_location}'"
+        )
 
         # Prefer Iceberg. Fall back to a plain managed table if the Iceberg
         # extensions are not configured on this connection -- the workshop only
@@ -267,12 +284,7 @@ def main():
     print("\n" + "-" * 60)
     print("STEP 3: Write to Data Lake")
     print("-" * 60)
-    table_path = write_to_datalake(
-        df,
-        DATALAKE_CONFIG["database_name"],
-        DATALAKE_CONFIG["table_name"],
-        USERNAME  # Add username parameter
-    )
+    table_path = write_to_datalake(df, USERNAME)
 
     # Step 4: Create sample inference data
     print("\n" + "-" * 60)

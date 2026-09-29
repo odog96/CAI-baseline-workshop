@@ -129,21 +129,19 @@ def load_preprocessing_pipeline(data_path="inference_data/feature_engineer.pkl")
 
 def get_model_endpoint_config():
     """
-    Get the deployed model endpoint configuration from shared_utils.config.
+    Get the deployed model endpoint configuration.
+
+    Resolved at runtime rather than read from a committed file -- an access key
+    in source control is a published credential. See shared_utils/model_endpoint.py.
 
     Returns:
         Tuple of (endpoint_url, access_key)
     """
-    from shared_utils.config import MODEL_ENDPOINT_CONFIG
+    from shared_utils import get_model_endpoint_config as resolve
 
-    MODEL_ENDPOINT = MODEL_ENDPOINT_CONFIG.get("model_endpoint")
-    ACCESS_KEY = MODEL_ENDPOINT_CONFIG.get("access_key")
-
-    if not MODEL_ENDPOINT or not ACCESS_KEY:
-        raise ValueError(
-            "Missing model_endpoint or access_key in shared_utils/config.py\n"
-            "Please update MODEL_ENDPOINT_CONFIG in shared_utils/config.py with your credentials."
-        )
+    config = resolve()
+    MODEL_ENDPOINT = config["model_endpoint"]
+    ACCESS_KEY = config["access_key"]
 
     print(f"✓ Model endpoint: {MODEL_ENDPOINT}")
     return MODEL_ENDPOINT, ACCESS_KEY

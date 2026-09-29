@@ -29,6 +29,18 @@ from .runtime import (
     resolve_runtime,
 )
 
+from .naming import (
+    external_warehouse_dir,
+    raw_username,
+    safe_username,
+    workshop_database,
+    workshop_database_location,
+    workshop_table,
+    workshop_table_path,
+)
+
+from .model_endpoint import get_model_endpoint_config
+
 _SPARK_AVAILABLE = spark_available()
 
 __all__ = [
@@ -49,4 +61,14 @@ __all__ = [
     'current_kernel',
     'list_available_runtimes',
     'resolve_runtime',
+    # Per-participant naming
+    'external_warehouse_dir',
+    'raw_username',
+    'safe_username',
+    'workshop_database',
+    'workshop_database_location',
+    'workshop_table',
+    'workshop_table_path',
+    # Model endpoint credentials
+    'get_model_endpoint_config',
 ]

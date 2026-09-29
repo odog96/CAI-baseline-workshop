@@ -122,3 +122,10 @@ img/
 
 # Streamlit cache and config (auto-generated per machine)
 .streamlit/
+
+# Local credentials -- resolved at runtime by shared_utils/model_endpoint.py.
+# A model access key committed to git is a published credential, and git history
+# means deleting the line later does not un-publish it. Never commit this.
+.secrets/
+*.pem
+*.key

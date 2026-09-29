@@ -3,8 +3,10 @@ Shared configuration for the MLOps workshop
 """
 
 # Data lake configuration
+# Per-participant database and table names are derived in shared_utils/naming.py
+# so that every script agrees; these are the base names it composes from.
 DATALAKE_CONFIG = {
-    "database_name": "default",
+    "database_name": "ml_workshop",
     "table_name": "bank_marketing",
 }
 
@@ -37,8 +39,18 @@ API_CONFIG = {
 }
 
 # Model endpoint configuration for inference
-# UPDATE THESE VALUES with your deployed model's endpoint and access key
-MODEL_ENDPOINT_CONFIG = {
-    "model_endpoint": "https://modelservice.ml-56979638-3f1.go01-dem.ylcu-atmi.cloudera.site/model",
-    "access_key": "m9p35t2ejlml2sbrbumjgo1xt23x2vr0"
-}
+#
+# Intentionally NOT stored here. A model access key authorises calls to the
+# model's REST endpoint, so committing one to git publishes a working credential
+# -- and because git keeps history, deleting it later does not un-publish it.
+# An access key that previously lived on this line has been removed for exactly
+# that reason.
+#
+# Use shared_utils.get_model_endpoint_config() instead. It resolves the endpoint
+# and key at runtime from (in order) environment variables, a git-ignored local
+# file, or the CML API -- the API path needs no configuration at all, because
+# each participant's own deployed model already holds its key.
+#
+#     from shared_utils import get_model_endpoint_config
+#     config = get_model_endpoint_config()
+#     endpoint, key = config["model_endpoint"], config["access_key"]
