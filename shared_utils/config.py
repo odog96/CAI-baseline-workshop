@@ -32,7 +32,10 @@ FEATURE_CONFIG = {
 
 # API deployment configuration
 API_CONFIG = {
-    "model_name": "banking-campaign-predictor",
+    # Underscores, not hyphens. This is the name module1/04_deploy.py actually
+    # deploys under and the name module2/02.2 and module3/5 look up, so a
+    # hyphenated value here silently failed to match the deployed model.
+    "model_name": "banking_campaign_predictor",
     "description": "Predicts if a customer will subscribe to a term deposit",
     "cpu": 1,
     "memory": 2,  # GB

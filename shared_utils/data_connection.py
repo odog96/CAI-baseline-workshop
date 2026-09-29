@@ -38,48 +38,83 @@ def require_spark():
         )
 
 
+def _field(conn, *keys):
+    """Read the first present key, tolerating dict or object shaped entries."""
+    for key in keys:
+        value = conn.get(key) if isinstance(conn, dict) else getattr(conn, key, None)
+        if value:
+            return str(value)
+    return ""
+
+
+def list_connection_names():
+    """
+    Return [(name, type)] for this project's data connections, or [] if they
+    cannot be listed.
+
+    Only the 'name' and 'type' fields are read. These entries also carry a
+    'connectionInfo' field holding live credentials, which is deliberately never
+    touched, logged or returned.
+    """
+    try:
+        connections = cmldata.get_project_dataconnections()
+    except Exception:
+        return []
+    return [(_field(c, "name", "displayName"), _field(c, "type", "connectionType"))
+            for c in connections]
+
+
 def get_connection_name():
     """
     Resolve the Spark data connection name.
 
     Order of preference:
-      1. The CONNECTION_NAME environment variable (Project Settings > Advanced).
+      1. CONNECTION_NAME (Project Settings > Advanced) -- but only if it actually
+         names a connection this project has.
       2. Auto-discovery, when the project has exactly one Spark connection.
 
-    Raises a message naming the available connections rather than failing deep
-    inside Spark, because the old hardcoded defaults ('go01-aw-dl', 'se-aws-edl',
-    'go01-demo') were all public-cloud names that cannot resolve on prem.
+    The validation in step 1 is the important part. This project shipped with
+    CONNECTION_NAME=go01-aw-dl, an AWS public-cloud Data Lake that does not exist
+    on prem. Returning an env value unchecked meant that dead string beat working
+    auto-discovery, and the failure surfaced deep inside Spark. Validating it
+    means a stale value from an older install, or a typo, self-heals with one
+    clear line instead.
     """
     name = os.environ.get("CONNECTION_NAME", "").strip()
-    if name:
-        return name
+    connections = list_connection_names()
+    known = [n for n, _ in connections]
 
-    try:
-        connections = cmldata.get_project_dataconnections()
-    except Exception as error:
+    if name:
+        if not connections:
+            # Cannot verify -- trust the operator rather than block on an API
+            # that may simply be unreachable from a job.
+            return name
+        if name in known:
+            ctype = next(t for n, t in connections if n == name)
+            if "spark" not in ctype.lower():
+                print(f"! CONNECTION_NAME={name!r} is a {ctype} connection, not SPARK.")
+                print("  get_spark_session() will likely fail. Set it to a Spark")
+                print("  connection in Project Settings > Advanced.")
+            return name
+        print(f"! CONNECTION_NAME={name!r} matches no data connection in this project.")
+        print("  Ignoring it and auto-discovering instead.")
+        print("  To silence this, update CONNECTION_NAME in Project Settings > Advanced.")
+
+    if not connections:
         raise RuntimeError(
-            "CONNECTION_NAME is not set and the project's data connections "
-            f"could not be listed ({error}).\n"
+            "CONNECTION_NAME is not set and the project's data connections could "
+            "not be listed.\n"
             "Fix: set CONNECTION_NAME in Project Settings > Advanced to the name "
             "shown in Project Settings > Data Connections."
-        ) from error
+        )
 
-    def field(conn, *keys):
-        for key in keys:
-            value = conn.get(key) if isinstance(conn, dict) else getattr(conn, key, None)
-            if value:
-                return str(value)
-        return ""
-
-    named = [(field(c, "name", "displayName"), field(c, "type", "connectionType"))
-             for c in connections]
-    spark = [n for n, t in named if "spark" in t.lower()]
+    spark = [n for n, t in connections if "spark" in t.lower()]
 
     if len(spark) == 1:
-        print(f"CONNECTION_NAME not set; using the only Spark connection: {spark[0]!r}")
+        print(f"Using the project's only Spark connection: {spark[0]!r}")
         return spark[0]
 
-    listing = "\n".join(f"  {n!r} (type: {t or 'unknown'})" for n, t in named) or "  (none)"
+    listing = "\n".join(f"  {n!r} (type: {t or 'unknown'})" for n, t in connections)
     raise RuntimeError(
         f"Could not pick a Spark data connection automatically "
         f"({len(spark)} Spark connections found).\n"

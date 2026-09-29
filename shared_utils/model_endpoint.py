@@ -64,9 +64,17 @@ def _from_cml_api(model_name):
     except Exception:
         return None
 
-    matches = [m for m in models if m.name == model_name] or models
+    # Prefer an exact name match. The previous version fell back to "any model in
+    # the project" whenever the name missed, which silently papered over the
+    # hyphen/underscore mismatch in API_CONFIG instead of surfacing it.
+    matches = [m for m in models if m.name == model_name]
     if not matches:
-        return None
+        if len(models) == 1:
+            print(f"! No model named {model_name!r}; using the project's only "
+                  f"model {models[0].name!r} instead.")
+            matches = models
+        else:
+            return None
 
     model = matches[0]
     access_key = getattr(model, "access_key", None)

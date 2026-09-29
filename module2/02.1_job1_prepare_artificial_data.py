@@ -34,6 +34,7 @@ from datetime import datetime
 import random
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
 # Configuration
 # ============================================================
@@ -250,18 +251,20 @@ def main():
     print("\nPHASE 4: Save Outputs")
     print("-" * 80)
 
-    # Create data directory if needed
-    os.makedirs("data", exist_ok=True)
+    # Create data directory if needed. Anchored to the project root, not cwd --
+    # 02.2 reads these two files from the same place, and a session started
+    # inside module2/ would otherwise write them where nothing looks.
+    os.makedirs(DATA_DIR, exist_ok=True)
 
     # Save artificial ground truth dataset
-    output_path = "data/artificial_ground_truth_data.csv"
+    output_path = os.path.join(DATA_DIR, "artificial_ground_truth_data.csv")
     final_df.to_csv(output_path, index=False)
     print(f"✓ Artificial ground truth dataset saved: {output_path}")
     print(f"  Shape: {final_df.shape}")
     print(f"  Columns: {list(final_df.columns)}")
 
     # Save metadata
-    metadata_path = "data/ground_truth_metadata.json"
+    metadata_path = os.path.join(DATA_DIR, "ground_truth_metadata.json")
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
     print(f"✓ Metadata saved: {metadata_path}")

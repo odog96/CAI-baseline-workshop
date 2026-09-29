@@ -76,7 +76,9 @@ if not USERNAME:
 
 # Configuration
 EXPERIMENT_NAME = f"BANK_MARKETING_EXPERIMENTS_{USERNAME}"
-MODEL_NAME = "banking_campaign_predictor"
+# Single source of truth, so the name this deploys under and the name module2/
+# module3 look up cannot drift apart again.
+MODEL_NAME = API_CONFIG["model_name"]
 
 print("=" * 80)
 print("Module 1 - Step 4: Model Deployment (V3 - Clean)")

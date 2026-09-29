@@ -42,8 +42,7 @@ Output:
 
 Environment Variables:
   BATCH_SIZE: Samples per batch (default: 250)
-  MODEL_NAME: Name of deployed model (default: "banking_campaign_predictor")
-  PROJECT_NAME: Name of CML project (default: "CAI Baseline MLOPS")
+  MODEL_NAME: Name of deployed model (default: from shared_utils API_CONFIG)
   ACCURACY_THRESHOLD: Minimum acceptable accuracy (default: 0.85)
   DEGRADATION_THRESHOLD: Minimum accuracy drop to flag as degraded (default: 0.05)
 """
@@ -63,9 +62,28 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
+# All paths are anchored to the project root, never to the working directory. A
+# CML job runs with cwd=/home/cdsw, but an interactive session started inside
+# module2/ does not -- and cwd-relative paths then write to module2/data/ where
+# 04_model_metrics_analysis.ipynb will never look for them.
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
+
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", "250"))
-MODEL_NAME = os.environ.get("MODEL_NAME", "banking_campaign_predictor")
-PROJECT_NAME = os.environ.get("PROJECT_NAME", "CAI Baseline MLOPS")
+
+# The model name comes from shared_utils so this job, 04_deploy.py and module3
+# cannot disagree about what the model is called.
+sys.path.insert(0, PROJECT_ROOT)
+from shared_utils import API_CONFIG
+
+MODEL_NAME = os.environ.get("MODEL_NAME") or API_CONFIG["model_name"]
+
+# PROJECT_NAME is gone on purpose. It used to default to the literal
+# "CAI Baseline MLOPS", which is not what this project is called -- so the
+# project lookup raised IndexError, the broad except below swallowed it, and the
+# job reported success while tracking zero metrics. CML sets CDSW_PROJECT_ID in
+# every session and job, so the project never has to be guessed by name.
+PROJECT_ID = os.environ.get("CDSW_PROJECT_ID")
 ACCURACY_THRESHOLD = float(os.environ.get("ACCURACY_THRESHOLD", "0.85"))
 DEGRADATION_THRESHOLD = float(os.environ.get("DEGRADATION_THRESHOLD", "0.05"))
 
@@ -83,8 +101,8 @@ END_PERIOD = args.end_period  # Will be calculated if None
 # ============================================================================
 # LOGGING SETUP
 # ============================================================================
-LOG_FILE = "data/monitoring_log.txt"
-os.makedirs("data", exist_ok=True)
+LOG_FILE = os.path.join(DATA_DIR, "monitoring_log.txt")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 def log_message(message, level="INFO"):
     """Log messages to both console and file."""
@@ -107,24 +125,39 @@ log_message(f"Thresholds: ACCURACY={ACCURACY_THRESHOLD*100:.1f}%, DEGRADATION={D
 # CML CLIENT SETUP
 # ============================================================================
 def setup_cml_client():
-    """Initialize CML API client."""
+    """
+    Initialize the CML API client and resolve this project's model deployment CRN.
+
+    Returns (client, project_id, crn), or (None, None, None) on failure. Failure
+    is non-fatal by design -- the monitoring maths still runs -- but it IS loudly
+    reported, because a run with no CRN tracks no metrics at all, and that is the
+    entire point of Module 2. The previous version logged a single WARNING that
+    was indistinguishable from a healthy run.
+    """
     try:
         client = cmlapi.default_client(
             url=os.getenv("CDSW_API_URL").replace("/api/v1", ""),
             cml_api_key=os.getenv("CDSW_APIV2_KEY")
         )
 
-        # Get model deployment CRN
-        target_model = client.list_all_models(
+        if not PROJECT_ID:
+            raise ValueError("CDSW_PROJECT_ID is not set in this environment")
+        proj_id = PROJECT_ID
+
+        # Scoped to THIS project. The previous version called list_all_models,
+        # which searches the whole workspace -- in a lab where every participant
+        # deploys a model with the same name, that returned everyone's models and
+        # [0] could pick somebody else's.
+        target_model = client.list_models(
+            project_id=proj_id,
             search_filter=json.dumps({"name": MODEL_NAME})
         )
 
         if not target_model.models:
-            raise ValueError(f"Model '{MODEL_NAME}' not found")
-
-        proj_id = client.list_projects(
-            search_filter=json.dumps({"name": PROJECT_NAME})
-        ).projects[0].id
+            raise ValueError(
+                f"No model named '{MODEL_NAME}' in this project. "
+                "Run module1/04_deploy.py first."
+            )
 
         mod_id = target_model.models[0].id
 
@@ -133,6 +166,8 @@ def setup_cml_client():
             model_id=mod_id,
             sort='created_at'
         )
+        if not build_list.model_builds:
+            raise ValueError(f"Model '{MODEL_NAME}' has no builds yet")
         build_id = build_list.model_builds[-1].id
 
         deployments = client.list_model_deployments(
@@ -140,6 +175,11 @@ def setup_cml_client():
             model_id=mod_id,
             build_id=build_id
         )
+        if not deployments.model_deployments:
+            raise ValueError(
+                f"Model '{MODEL_NAME}' has a build but no deployment. "
+                "Check Model Deployments in the UI."
+            )
 
         cr_number = deployments.model_deployments[0].crn
 
@@ -147,15 +187,22 @@ def setup_cml_client():
         return client, proj_id, cr_number
 
     except Exception as e:
-        log_message(f"Could not initialize CML client: {e}", "WARNING")
+        log_message("=" * 70, "WARNING")
+        log_message(f"METRICS WILL NOT BE TRACKED: {e}", "WARNING")
+        log_message("The monitoring calculations below still run, but nothing is", "WARNING")
+        log_message("sent to Cloudera AI model metrics -- so the Module 2 metrics", "WARNING")
+        log_message("dashboard and 04_model_metrics_analysis.ipynb will be EMPTY.", "WARNING")
+        log_message("This is not a successful run. Fix the cause above first.", "WARNING")
+        log_message("=" * 70, "WARNING")
         return None, None, None
 
 
 # ============================================================================
 # DATA LOADING FUNCTIONS
 # ============================================================================
-def load_metadata(metadata_path="data/ground_truth_metadata.json"):
+def load_metadata(metadata_path=None):
     """Load period boundaries from metadata."""
+    metadata_path = metadata_path or os.path.join(DATA_DIR, "ground_truth_metadata.json")
     if not os.path.exists(metadata_path):
         raise FileNotFoundError(f"Metadata not found at {metadata_path}")
 
@@ -166,8 +213,9 @@ def load_metadata(metadata_path="data/ground_truth_metadata.json"):
     return metadata
 
 
-def load_full_dataset(data_path="data/artificial_ground_truth_data.csv"):
+def load_full_dataset(data_path=None):
     """Load the full dataset."""
+    data_path = data_path or os.path.join(DATA_DIR, "artificial_ground_truth_data.csv")
     if not os.path.exists(data_path):
         raise FileNotFoundError(f"Ground truth data not found at {data_path}")
 
@@ -259,7 +307,7 @@ def get_predictions(period, full_df, metadata, cr_number):
             "predictions": all_predictions
         }
 
-        output_path = f"data/predictions_period_{period}.json"
+        output_path = os.path.join(DATA_DIR, f"predictions_period_{period}.json")
         with open(output_path, 'w') as f:
             json.dump(predictions_data, f, indent=2)
 
@@ -311,7 +359,7 @@ def load_ground_truth(period, full_df, metadata):
         }
 
         # Save period labels
-        output_path = f"data/period_{period}_ground_truth.json"
+        output_path = os.path.join(DATA_DIR, f"period_{period}_ground_truth.json")
         with open(output_path, 'w') as f:
             json.dump(period_labels, f, indent=2)
 
@@ -341,8 +389,10 @@ def calculate_metrics(ground_truth, predictions):
     return metrics
 
 
-def load_previous_accuracy(monitoring_results_file="data/monitoring_results.json"):
+def load_previous_accuracy(monitoring_results_file=None):
     """Load previous period's accuracy."""
+    monitoring_results_file = monitoring_results_file or os.path.join(
+        DATA_DIR, "monitoring_results.json")
     if not os.path.exists(monitoring_results_file):
         return None
 
@@ -559,7 +609,7 @@ def main():
 
 def save_monitoring_results(period_results, status="running"):
     """Save monitoring results to JSON."""
-    output_path = "data/monitoring_results.json"
+    output_path = os.path.join(DATA_DIR, "monitoring_results.json")
 
     results = {
         "status": status,
