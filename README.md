@@ -163,8 +163,8 @@ Before you start, ensure you have:
 │   └── helpers/                        ← Shared utilities
 ├── module2/                             ← AFTER Module 1
 │   ├── README.md
-│   ├── 02_prepare_artificial_data.py
-│   └── 03_monitoring_pipeline.py
+│   ├── 02.1_job1_prepare_artificial_data.py
+│   └── 02.2_job2_monitoring_pipeline.py
 ├── module3/                             ← AFTER Module 1 & 2
 │   ├── README.md
 │   ├── 1_check_drift.py
