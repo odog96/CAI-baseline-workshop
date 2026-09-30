@@ -128,8 +128,15 @@ except ApiException as e:
 # ============================================================================
 print("\n[5/6] Creating model build...")
 
-# Using the same standard runtime from your example
-runtime_id = "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.10-standard:2026.01.1-b6"
+# Runtime tags differ per workspace, so look up the newest matching one
+sys.path.insert(0, BASE_DIR)
+from shared_utils.runtime import get_workbench_runtime
+try:
+    runtime_id = get_workbench_runtime(cml_client)
+except RuntimeError as e:
+    print(f"   ❌ ERROR: {e}")
+    sys.exit(1)
+print(f"   Using runtime: {runtime_id}")
 
 create_build_request = cmlapi.CreateModelBuildRequest(
     registered_model_version_id=str(model_version_id),

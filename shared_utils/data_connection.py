@@ -21,6 +21,30 @@ def get_spark_session():
     return spark
 
 
+def get_connection_name():
+    """
+    Resolve the Spark data connection name for this project.
+
+    Uses the CONNECTION_NAME env var if it matches a data connection in the
+    project; otherwise falls back to the first SPARK connection available.
+    """
+    configured = os.environ.get("CONNECTION_NAME")
+    connections = cmldata.data.get_project_dataconnections()
+    names = [c["name"] for c in connections]
+    if configured in names:
+        return configured
+
+    spark_conns = [c["name"] for c in connections if c.get("type") == "SPARK"]
+    if not spark_conns:
+        raise ValueError(
+            f"Data connection '{configured}' not found and no SPARK connection "
+            f"available. Available connections: {names}"
+        )
+    print(f"WARNING: data connection '{configured}' not found; "
+          f"using '{spark_conns[0]}'. Set CONNECTION_NAME in project settings to silence this.")
+    return spark_conns[0]
+
+
 def get_data_connection():
     """
     Get the CML data connection

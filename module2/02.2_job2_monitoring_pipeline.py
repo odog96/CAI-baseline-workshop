@@ -43,7 +43,6 @@ Output:
 Environment Variables:
   BATCH_SIZE: Samples per batch (default: 250)
   MODEL_NAME: Name of deployed model (default: "banking_campaign_predictor")
-  PROJECT_NAME: Name of CML project (default: "CAI Baseline MLOPS")
   ACCURACY_THRESHOLD: Minimum acceptable accuracy (default: 0.85)
   DEGRADATION_THRESHOLD: Minimum accuracy drop to flag as degraded (default: 0.05)
 """
@@ -54,7 +53,7 @@ import os
 import sys
 from datetime import datetime
 import time
-import cml
+import cml.metrics_v1 as cml_metrics
 import cmlapi
 import numpy as np
 import argparse
@@ -65,7 +64,6 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 # ============================================================================
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", "250"))
 MODEL_NAME = os.environ.get("MODEL_NAME", "banking_campaign_predictor")
-PROJECT_NAME = os.environ.get("PROJECT_NAME", "CAI Baseline MLOPS")
 ACCURACY_THRESHOLD = float(os.environ.get("ACCURACY_THRESHOLD", "0.85"))
 DEGRADATION_THRESHOLD = float(os.environ.get("DEGRADATION_THRESHOLD", "0.05"))
 
@@ -114,17 +112,15 @@ def setup_cml_client():
             cml_api_key=os.getenv("CDSW_APIV2_KEY")
         )
 
-        # Get model deployment CRN
-        target_model = client.list_all_models(
+        # Get model deployment CRN (look up the model in this project only)
+        proj_id = os.environ["CDSW_PROJECT_ID"]
+        target_model = client.list_models(
+            project_id=proj_id,
             search_filter=json.dumps({"name": MODEL_NAME})
         )
 
         if not target_model.models:
             raise ValueError(f"Model '{MODEL_NAME}' not found")
-
-        proj_id = client.list_projects(
-            search_filter=json.dumps({"name": PROJECT_NAME})
-        ).projects[0].id
 
         mod_id = target_model.models[0].id
 
@@ -196,15 +192,8 @@ def process_batch(batch_df, batch_num, cr_number, period):
             "period": int(period),
         }
 
-        # Track with Cloudera if available
-        if cr_number:
-            try:
-                cml.track_delayed_metrics(
-                    tracking_data,
-                    unique_id=f"period_{period}_batch_{batch_num}_idx_{idx}"
-                )
-            except Exception as e:
-                log_message(f"Could not track metrics for sample {idx}: {e}", "WARNING")
+        # Per-sample delayed metrics need a prediction UUID from a live model call;
+        # these predictions are precomputed, so only period aggregates are tracked to CML
 
         predictions_tracked.append({
             "index": idx,
@@ -385,7 +374,7 @@ def track_metrics_to_cml(metrics, cr_number, period):
     try:
         timestamp_ms = int(datetime.now().timestamp() * 1000)
 
-        cml.track_aggregate_metrics(
+        cml_metrics.track_aggregate_metrics(
             {
                 "accuracy": metrics["accuracy"],
                 "precision": metrics["precision"],
@@ -522,8 +511,8 @@ def main():
                 log_message(f"Degradation detected at period: {period}")
                 log_message(f"Final accuracy: {all_period_results[-1]['metrics']['accuracy']*100:.2f}%")
                 log_message(f"Results saved to: data/monitoring_results.json")
-                # Exit with status 0 (success) - degradation is expected behavior, not an error
-                sys.exit(0)
+                # Return normally (exit 0) - degradation is expected behavior, not an error
+                return
 
             elif is_last_period:
                 log_message(f"\n✓ Last period completed successfully")
@@ -552,9 +541,9 @@ def main():
         import traceback
         traceback.print_exc()
         log_message(f"\nPipeline failed with error. Check logs above for details.", "ERROR")
-        # Exit with status 0 to mark job as complete (not crashed)
+        # Return normally (exit 0) to mark job as complete (not crashed)
         # The error is logged in the monitoring_results.json for review
-        sys.exit(0)
+        return
 
 
 def save_monitoring_results(period_results, status="running"):

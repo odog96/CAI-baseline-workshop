@@ -499,7 +499,15 @@ logger.info("=" * 60)
 logger.info("STEP 5: Create Model Build")
 logger.info("=" * 60)
 
-runtime_id = "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.10-standard:2026.01.1-b6"
+# Runtime tags differ per workspace, so look up the newest matching one
+from shared_utils.runtime import get_workbench_runtime
+try:
+    runtime_id = get_workbench_runtime(cml_client)
+except RuntimeError as e:
+    logger.error(str(e))
+    print(f"   ❌ ERROR: {e}")
+    sys.exit(1)
+print(f"   Using runtime: {runtime_id}")
 
 # ✅ FIX 3: Use CreateModelBuildRequest with registered_model_version_id
 create_build_request = cmlapi.CreateModelBuildRequest(
@@ -628,6 +636,28 @@ else:
         logger.info(f"  - Status: {deployment.status if hasattr(deployment, 'status') else 'N/A'}")
         print(f"   ✅ Deployment created: {deployment.id}")
         deployment_id = deployment.id
+
+        # Wait for the deployment to be serving so downstream inference works
+        print(f"   ⏳ Waiting for deployment to start...")
+        for i in range(checks):
+            status = cml_client.get_model_deployment(
+                project_id=project_id,
+                model_id=cml_model.id,
+                build_id=build.id,
+                deployment_id=deployment_id
+            ).status
+            logger.info(f"Deployment check {i+1}/{checks}: status = {status}")
+            print(f"   Check {i+1}/{checks}: Deployment status = {status}")
+            if status == "deployed":
+                break
+            if status in ["failed", "stopped"]:
+                logger.error(f"Deployment ended with status: {status}")
+                print(f"   ❌ Deployment {status}. Check CML UI: Models > {MODEL_NAME} > Deployments")
+                sys.exit(1)
+            time.sleep(check_interval_seconds)
+        else:
+            logger.warning(f"Deployment not running after {max_wait_minutes} minutes")
+            print(f"   ⚠️  Deployment not running after {max_wait_minutes} minutes")
 
     except ApiException as e:
         logger.error("=" * 60)

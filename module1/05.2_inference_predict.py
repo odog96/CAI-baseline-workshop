@@ -129,11 +129,31 @@ def load_preprocessing_pipeline(data_path="inference_data/feature_engineer.pkl")
 
 def get_model_endpoint_config():
     """
-    Get the deployed model endpoint configuration from shared_utils.config.
+    Get the deployed model endpoint configuration.
+
+    Uses the model deployed by 04_deploy.py (outputs/deployment_info.json) when
+    available, otherwise falls back to MODEL_ENDPOINT_CONFIG in shared_utils.config.
 
     Returns:
         Tuple of (endpoint_url, access_key)
     """
+    info_path = "outputs/deployment_info.json"
+    domain = os.environ.get("CDSW_DOMAIN")
+    if os.path.exists(info_path) and domain:
+        try:
+            import cmlapi
+            with open(info_path) as f:
+                info = json.load(f)
+            model = cmlapi.default_client().get_model(
+                project_id=os.environ["CDSW_PROJECT_ID"],
+                model_id=info["cml_model_id"]
+            )
+            endpoint = f"https://modelservice.{domain}/model"
+            print(f"✓ Model endpoint (from {info_path}): {endpoint}")
+            return endpoint, model.access_key
+        except Exception as e:
+            print(f"⚠️  Could not look up deployed model ({e}); using shared_utils/config.py")
+
     from shared_utils.config import MODEL_ENDPOINT_CONFIG
 
     MODEL_ENDPOINT = MODEL_ENDPOINT_CONFIG.get("model_endpoint")
