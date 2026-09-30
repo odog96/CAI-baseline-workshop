@@ -187,7 +187,7 @@ for i in range(checks):
         elif status == "build failed":
             print(f"   ❌ Build failed! Check CML UI for build logs.")
             sys.exit(1)
-        elif status in ["building", "queued", "pushing"]:
+        elif status in ["pending", "queued", "building", "pushing"]:
             time.sleep(check_interval_seconds)
         else:
             print(f"   ⚠️  Unknown status: {status}")

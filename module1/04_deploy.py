@@ -590,7 +590,7 @@ for i in range(checks):
             print(f"   ❌ Build failed!")
             print(f"   Check CML UI for build logs: Models > {MODEL_NAME} > Builds")
             sys.exit(1)
-        elif status in ["building", "queued", "pushing"]:
+        elif status in ["pending", "queued", "building", "pushing"]:
             # Still building, wait
             time.sleep(check_interval_seconds)
         else:
