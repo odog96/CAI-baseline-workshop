@@ -18,7 +18,7 @@ import cml.data_v1 as cmldata
 # Add parent directory for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from shared_utils import DATALAKE_CONFIG
+from shared_utils import DATALAKE_CONFIG, get_connection_name
 
 
 def delete_local_data():
@@ -43,9 +43,8 @@ def drop_database_and_tables():
     USERNAME = os.environ.get("PROJECT_OWNER", "default_user")
     
     # Get connection
-    CONNECTION_NAME = os.environ.get("CONNECTION_NAME", "go01-aw-dl")
-    
     try:
+        CONNECTION_NAME = get_connection_name()
         print(f"\nConnecting to data lake: {CONNECTION_NAME}")
         conn = cmldata.get_connection(CONNECTION_NAME)
         spark = conn.get_spark_session()

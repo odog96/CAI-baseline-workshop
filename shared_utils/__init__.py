@@ -13,6 +13,7 @@ from .config import (
 try:
     from .data_connection import (
         get_spark_session,
+        get_connection_name,
         get_data_connection,
         read_table_with_spark,
         spark_to_pandas
@@ -26,6 +27,7 @@ except ImportError as e:
         raise
     _SPARK_AVAILABLE = False
     get_spark_session = None
+    get_connection_name = None
     get_data_connection = None
     read_table_with_spark = None
     spark_to_pandas = None
@@ -38,6 +40,7 @@ __all__ = [
     'API_CONFIG',
     # Data connections
     'get_spark_session',
+    'get_connection_name',
     'get_data_connection',
     'read_table_with_spark',
     'spark_to_pandas',

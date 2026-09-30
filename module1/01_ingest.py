@@ -28,7 +28,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared_utils import (
     DATALAKE_CONFIG,
-    get_spark_session
+    get_spark_session,
+    get_connection_name
 )
 
 
@@ -99,7 +100,7 @@ def write_to_datalake(df, database_name, table_name, username):
     print(f"\nWriting to data lake with user: {username}")
 
     # Get connection name from environment (matches yaml)
-    CONNECTION_NAME = os.environ.get("CONNECTION_NAME", "se-aws-edl")  #
+    CONNECTION_NAME = get_connection_name()
     print(f"Using connection: {CONNECTION_NAME}")
 
     # Get Spark from CML data connection

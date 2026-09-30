@@ -28,7 +28,7 @@ try:
         retrain_info = json.load(f)
 except FileNotFoundError:
     print(f"❌ ERROR: '{RUN_INFO_FILE}' not found.")
-    print("   Did you run '3_retrain_model.py' first?")
+    print("   Did you run '4_retrain_model.py' first?")
     sys.exit(1)
 
 run_id = retrain_info.get("run_id")
@@ -128,8 +128,15 @@ except ApiException as e:
 # ============================================================================
 print("\n[5/6] Creating model build...")
 
-# Using the same standard runtime from your example
-runtime_id = "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-pbj-workbench-python3.10-standard:2026.01.1-b6"
+# Runtime tags differ per workspace, so look up the newest matching one
+sys.path.insert(0, BASE_DIR)
+from shared_utils.runtime import get_workbench_runtime
+try:
+    runtime_id = get_workbench_runtime(cml_client)
+except RuntimeError as e:
+    print(f"   ❌ ERROR: {e}")
+    sys.exit(1)
+print(f"   Using runtime: {runtime_id}")
 
 create_build_request = cmlapi.CreateModelBuildRequest(
     registered_model_version_id=str(model_version_id),
@@ -180,7 +187,7 @@ for i in range(checks):
         elif status == "build failed":
             print(f"   ❌ Build failed! Check CML UI for build logs.")
             sys.exit(1)
-        elif status in ["building", "queued"]:
+        elif status in ["pending", "queued", "building", "pushing"]:
             time.sleep(check_interval_seconds)
         else:
             print(f"   ⚠️  Unknown status: {status}")
@@ -252,7 +259,7 @@ deployment_info = {
 }
 
 os.makedirs("outputs", exist_ok=True)
-with open(os.path.join("outputs", "deployment_info_v2.json"), "w") as f:
+with open(os.path.join(BASE_DIR, "outputs", "deployment_info_v2.json"), "w") as f:
     json.dump(deployment_info, f, indent=2)
 
 print(f"\n💾 Saved to: outputs/deployment_info_v2.json")
