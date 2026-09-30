@@ -76,6 +76,7 @@ data/processed/
 
 # User/system cache and config (add to existing .gitignore)
 .bash_history
+.lesshst
 .cache/
 .conda/
 .ipython/
