@@ -6,8 +6,11 @@ import os
 print("--- Starting Live Data Simulator (Step 0) ---")
 
 # Define the output file for our "live" data batch
+# Paths are anchored to the project so the script works from any directory
+MODULE3_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(MODULE3_DIR)
 LIVE_DATA_FILE = "live_unlabeled_batch.csv"
-OUTPUT_DIR = "outputs"
+OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 OUTPUT_PATH = os.path.join(OUTPUT_DIR, LIVE_DATA_FILE)
 REFERENCE_FILE = "/home/cdsw/module1/data/bank-additional/bank-additional-full.csv"
 

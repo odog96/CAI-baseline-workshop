@@ -137,7 +137,7 @@ Once Module 1 is complete, you'll have the data and trained models needed for Mo
 
 Before you start, ensure you have:
 - Access to a Cloudera AI workspace (CML project)
-- Python 3.10+ runtime available
+- Python 3.12 runtime (PBJ Workbench, Standard edition)
 - ~500MB disk space for data and models
 - Terminal/command line access
 - Basic familiarity with Python (helpful but not required)
@@ -163,8 +163,8 @@ Before you start, ensure you have:
 │   └── helpers/                        ← Shared utilities
 ├── module2/                             ← AFTER Module 1
 │   ├── README.md
-│   ├── 02_prepare_artificial_data.py
-│   └── 03_monitoring_pipeline.py
+│   ├── 02.1_job1_prepare_artificial_data.py
+│   └── 02.2_job2_monitoring_pipeline.py
 ├── module3/                             ← AFTER Module 1 & 2
 │   ├── README.md
 │   ├── 1_check_drift.py
@@ -209,7 +209,7 @@ See the **Troubleshooting** section at the end of each module's README.
 4. Check that you're running from the correct directory
 
 ### For Setup Issues
-- Verify Python 3.10+ is available: `python --version`
+- Verify Python 3.12 is available: `python --version`
 - Verify required packages: `pip list | grep pandas`
 - Check that data files exist: `ls -la module1/data/`
 

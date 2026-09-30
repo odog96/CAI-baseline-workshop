@@ -28,7 +28,7 @@ try:
         retrain_info = json.load(f)
 except FileNotFoundError:
     print(f"❌ ERROR: '{RUN_INFO_FILE}' not found.")
-    print("   Did you run '3_retrain_model.py' first?")
+    print("   Did you run '4_retrain_model.py' first?")
     sys.exit(1)
 
 run_id = retrain_info.get("run_id")
@@ -187,7 +187,7 @@ for i in range(checks):
         elif status == "build failed":
             print(f"   ❌ Build failed! Check CML UI for build logs.")
             sys.exit(1)
-        elif status in ["building", "queued"]:
+        elif status in ["building", "queued", "pushing"]:
             time.sleep(check_interval_seconds)
         else:
             print(f"   ⚠️  Unknown status: {status}")
@@ -259,7 +259,7 @@ deployment_info = {
 }
 
 os.makedirs("outputs", exist_ok=True)
-with open(os.path.join("outputs", "deployment_info_v2.json"), "w") as f:
+with open(os.path.join(BASE_DIR, "outputs", "deployment_info_v2.json"), "w") as f:
     json.dump(deployment_info, f, indent=2)
 
 print(f"\n💾 Saved to: outputs/deployment_info_v2.json")

@@ -9,15 +9,19 @@ from evidently.legacy.tests import * # Import all standard tests
 print("--- Starting Monitoring Job (Step 1) ---")
 
 # Define our data files
-REFERENCE_FILE = "/home/cdsw/module1/data/bank-additional/bank-additional-full.csv"
-CURRENT_FILE = os.path.join("outputs", "live_unlabeled_batch.csv")
-OUTPUT_DIR = "outputs"
-OUTPUT_REPORT_HTML = "1_drift_report_explicit.html"
+# Paths are anchored to the project so the script works from any directory
+MODULE3_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(MODULE3_DIR)
+REFERENCE_FILE = os.path.join(BASE_DIR, "module1", "data", "bank-additional", "bank-additional-full.csv")
+OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
+CURRENT_FILE = os.path.join(OUTPUT_DIR, "live_unlabeled_batch.csv")
+OUTPUT_REPORT_HTML = os.path.join(MODULE3_DIR, "1_drift_report_explicit.html")  # read by reporting_main_app.py
 OUTPUT_TRIGGER_FILE = os.path.join(OUTPUT_DIR, "drift_status.json") # This is our new trigger!
 
 # 1. Load datasets
 try:
-    reference_data = pd.read_csv(REFERENCE_FILE, sep=';')
+    # Drop the label: live production data is unlabeled, so compare features only
+    reference_data = pd.read_csv(REFERENCE_FILE, sep=';').drop(columns=['y'])
     current_data = pd.read_csv(CURRENT_FILE)
     print(f"Loaded {len(reference_data)} reference records.")
     print(f"Loaded {len(current_data)} current records to check.")
@@ -66,7 +70,7 @@ status_str = "PASS" if status else "FAIL"
 trigger_data = {
     "status": status_str,
     "total_tests": results.get("summary", {}).get("total_tests"),
-    "passed_tests": results.get("summary", {}).get("passed_tests"),
+    "passed_tests": results.get("summary", {}).get("success_tests"),
     "failed_tests": results.get("summary", {}).get("failed_tests"),
     "timestamp": pd.Timestamp.now().isoformat()
 }

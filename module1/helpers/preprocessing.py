@@ -24,7 +24,23 @@ class FeatureEngineer:
 
     def __init__(self):
         """Initialize the feature engineer."""
-        pass
+        self.campaign_min = None
+        self.campaign_max = None
+
+    def fit(self, df):
+        """
+        Learn normalization stats from training data so every later batch
+        (including single-row inference requests) is scaled the same way.
+
+        Args:
+            df: Training DataFrame
+
+        Returns:
+            self
+        """
+        self.campaign_min = df['campaign'].min()
+        self.campaign_max = df['campaign'].max()
+        return self
 
     def engineer_customer_engagement_score(self, df):
         """
@@ -43,8 +59,14 @@ class FeatureEngineer:
         """
         df = df.copy()
 
-        # Normalize campaign contacts (0-1 scale)
-        campaign_norm = (df['campaign'] - df['campaign'].min()) / (df['campaign'].max() - df['campaign'].min())
+        # Normalize campaign contacts (0-1 scale) using the training range from fit();
+        # unfitted instances fall back to this batch's range
+        c_min = getattr(self, 'campaign_min', None)
+        c_max = getattr(self, 'campaign_max', None)
+        if c_min is None:
+            c_min, c_max = df['campaign'].min(), df['campaign'].max()
+        c_range = (c_max - c_min) or 1
+        campaign_norm = ((df['campaign'] - c_min) / c_range).clip(0, 1)
 
         # Previous campaign success (0 or 1)
         prev_success = (df['poutcome'] == 'success').astype(int)
@@ -273,7 +295,7 @@ def preprocess_for_training(df, target_column='y', include_engagement=True):
     df = df.copy()
 
     # Step 1: Feature Engineering
-    feature_engineer = FeatureEngineer()
+    feature_engineer = FeatureEngineer().fit(df)
     df_engineered = feature_engineer.transform(df)
 
     # Step 2: Extract target

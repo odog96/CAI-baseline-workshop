@@ -120,7 +120,9 @@ def apply_feature_engineering(df):
     """
     print("\nApplying feature engineering...")
 
-    feature_engineer = FeatureEngineer()
+    # Fit on training data so inference batches use the same normalization as training
+    train_data_path = os.path.join(SCRIPT_DIR, "data", "bank-additional", "bank-additional-full.csv")
+    feature_engineer = FeatureEngineer().fit(pd.read_csv(train_data_path, sep=";"))
     df_engineered = feature_engineer.transform(df)
 
     print(f"✓ Feature engineering complete")
